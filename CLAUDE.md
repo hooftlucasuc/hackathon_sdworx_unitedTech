@@ -20,7 +20,8 @@ Secrets: via omgevingsvariabelen lokaal, Secret Manager op Cloud Run, nooit in d
 - Vite + React + TypeScript — dashboard, realtime via Firestore `onSnapshot`.
 
 ## Structuur
-- `TEAMPLAN.md` — het contract (§1), rolverdeling en prompts per teammate. Eerst lezen.
+- `CONTEXT.md` — zelfstandig contextbestand voor teammates in Claude Code of Cursor. Eerst lezen.
+- `TEAMPLAN.md` — het contract (§1), tijdlijn en prompts per teammate.
 - `backend/` — FastAPI-app (rol B). Bevat nog restanten van het vorige TrustCard-plan, zie `TEAMPLAN.md` §5.
 - `frontend/` — dashboard (rol C).
 - `infra/` — `gcp_setup.sh`, Firestore-indexen, Cloud Run deploy.

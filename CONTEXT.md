@@ -1,0 +1,113 @@
+# CONTEXT — CallSight (SD Worx hackathon, Tectonic 2026)
+
+Plak dit bestand als context in Claude Code, Cursor of Claude.ai vóór je aan je deel begint. Het is zelfstandig: alles wat je nodig hebt om binnen het contract te bouwen staat hier. Het volledige plan met tijdlijn en jouw persoonlijke prompt staat in `TEAMPLAN.md`.
+
+## Wat we bouwen
+
+Een klant belt SD Worx. Een ElevenLabs-spraakagent neemt op, voert een kort gesprek in het Nederlands en haalt eruit: **wie belt, van welk bedrijf, met welk probleem, hoe dringend**. Na het gesprek stuurt ElevenLabs een webhook naar onze backend op Google Cloud. Die slaat de call op, herkent beller en bedrijf, en zoekt in de kennisbank naar oplossingen voor gelijkaardige problemen, elk met een uitlegbare score. Het dashboard toont dit in realtime: beller-historie, bedrijfshistorie en de top-5 oplossingen.
+
+Verhaal voor de jury: *nog voor de medewerker terugbelt, weet hij wie dit is, wat er eerder speelde en wat toen werkte. Elke afgehandelde call maakt de kennisbank beter.*
+
+```
+telefoon → ElevenLabs agent → post-call webhook → Cloud Run (FastAPI) → Firestore (europe-west1)
+                                                        ↓ Vertex embeddings + score
+                                                   Dashboard (React, realtime)
+```
+
+## Team
+
+| Rol | Bouwt | Map |
+|---|---|---|
+| A · Voice | ElevenLabs-agent, data collection, webhook-config, replay-script | `docs/elevenlabs-agent.md`, `scripts/`, `samples/` |
+| B · Backend | FastAPI op Cloud Run, webhook, Firestore, embeddings, score, API | `backend/`, `infra/` |
+| C · Dashboard | React-dashboard, realtime Firestore, oplossingen met score | `frontend/` |
+| D · Data en demo | GCP-setup, seed-dataset, demo-script, README, Aikido, integratietest | `data/seed/`, `scripts/seed.py`, `docs/`, `README.md` |
+
+Iedereen werkt op dummy-data van de buurrol tot de koppeling er is. `POST /demo/simulate-call` is de vaste testingang: het dashboard hoeft nooit op een echt gesprek te wachten.
+
+## Contract (wijzigt alleen na melding aan alle vier)
+
+### Velden die de agent uit het gesprek haalt
+
+`caller_name` · `company_name` · `problem` · `category` (één uit: `vakantiegeld`, `loonberekening`, `ziekte`, `dimona`, `maaltijdcheques`, `bedrijfswagen`, `ontslag`, `overig`) · `urgency` (`laag`, `midden`, `hoog`).
+
+### Webhook ElevenLabs → backend
+
+`POST /webhooks/elevenlabs`, header `ElevenLabs-Signature: t=<ts>,v0=<hmac>` (HMAC-SHA256 over `"<ts>.<body>"` met het webhook-secret). Wij lezen uit de payload: `data.conversation_id`, `data.transcript[]`, `data.metadata.start_time_unix_secs`, `data.metadata.call_duration_secs`, `data.analysis.transcript_summary`, `data.analysis.data_collection_results.<veld>.value`. Antwoord `200 {"call_id": "..."}` binnen 5 s.
+
+### Firestore-collecties (Native mode, europe-west1)
+
+```
+callers/{caller_id}     caller_id = slug(caller_name + company_id)
+                        name, company_id, first_seen, last_seen, call_count
+companies/{company_id}  company_id = slug(company_name)
+                        name, sector, size, first_seen, last_seen, call_count, open_issues
+calls/{call_id}         call_id = conversation_id
+                        caller_id, company_id, started_at, duration_secs, problem, category, urgency,
+                        summary, transcript[], status: open | resolved, problem_embedding: Vector(768),
+                        suggestions[ {solution_id, score, reasons: {similarity, success, recency}} ] (max 5),
+                        chosen_solution_id
+solutions/{solution_id} title, problem_text, solution_text, category, times_used, times_successful,
+                        last_used_at, source_call_id, problem_embedding: Vector(768)
+```
+
+### API
+
+| Method | Path | Doet |
+|---|---|---|
+| POST | `/webhooks/elevenlabs` | call opslaan, beller/bedrijf upserten, suggestions berekenen |
+| GET | `/calls/latest` | nieuwste call met suggestions |
+| GET | `/calls/{call_id}` | één call |
+| GET | `/callers/{caller_id}` | beller + zijn calls |
+| GET | `/companies/{company_id}` | bedrijf + alle calls |
+| GET | `/calls/{call_id}/suggestions` | top-5 met score en deelwaarden |
+| POST | `/calls/{call_id}/resolve` | `{solution_id, worked}` → tellers bijwerken, status resolved |
+| POST | `/demo/simulate-call` | zelfde body als de webhook, zonder signature, alleen met `DEMO_MODE=true` |
+
+Het dashboard leest daarnaast rechtstreeks uit Firestore met `onSnapshot` (alleen lezen).
+
+### Score van een oplossing
+
+```
+score        = 100 × (0.60 × similarity + 0.25 × success_rate + 0.15 × recency)
+similarity   = 1 − cosine_distance(call.problem_embedding, solution.problem_embedding)
+success_rate = (times_successful + 1) / (times_used + 2)
+recency      = 1 bij ≤ 90 dagen, 0 bij ≥ 730 dagen, lineair ertussen
+```
+
+Deterministisch, geen LLM in de score. De drie deelwaarden reizen mee naar het dashboard als uitleg.
+
+### Env
+
+```
+GCP_PROJECT=            GCP_REGION=europe-west1     GOOGLE_APPLICATION_CREDENTIALS=./sa-key.json
+EMBEDDING_MODEL=gemini-embedding-001               EMBEDDING_DIM=768
+ELEVENLABS_API_KEY=     ELEVENLABS_AGENT_ID=        ELEVENLABS_WEBHOOK_SECRET=
+DEMO_MODE=true          FRONTEND_ORIGIN=http://localhost:5173
+```
+
+## Stack en regels
+
+- **Backend:** Python 3.11, FastAPI, pydantic v2, google-cloud-firestore, google-cloud-aiplatform. Cloud Run, min-instances 0. Alle Firestore-calls in één repository-bestand.
+- **Embeddings:** Vertex AI `gemini-embedding-001`, 768 dims, task `RETRIEVAL_QUERY` voor de vraag en `RETRIEVAL_DOCUMENT` voor solutions. Fallback: `text-multilingual-embedding-002`.
+- **Dashboard:** Vite + React + TypeScript, Firebase JS SDK voor realtime lezen, `fetch` naar de API voor schrijven. Rustige stijl: antracietgrijze tekst, lichtgrijze panelen, één accentkleur voor de score. Geen UI-framework nodig.
+- **Code:** type hints overal, `logging` in plaats van `print`, `pathlib` voor paden, pydantic `max_length` op alle vrije tekst, CORS alleen op `FRONTEND_ORIGIN`.
+- **Secrets:** alleen in `.env` (lokaal) of Secret Manager (Cloud Run). `.env`, `sa-key.json` en `*.pem` staan in `.gitignore`. Nooit een key in code, commit of screenshot.
+- **Privacy:** gespreksdata is persoonsgegevens. Alleen fictieve bellers en bedrijven, ook in seed-data en video. Geen audio bewaren, alleen transcript en geëxtraheerde velden. Nooit een naam of transcript in een logregel. Opslag uitsluitend `europe-west1`.
+- **Geen extra features** buiten dit contract vóór de feature freeze (2:30). Iets wat ontbreekt: melden, niet zelf uitbreiden.
+
+## Stand van de repo
+
+De repo bevat nog bestanden van een eerder plan ("TrustCard": `BUILD_SPEC.md`, `countries/`, `backend/app/core/`, `backend/app/ingest/`, `backend/app/store/`). Die zijn **niet** de huidige koers. Herbruikbaar voor B: `backend/app/store/embeddings.py` (Vertex-embedder plus offline hash-embedder voor tests) en `backend/app/store/firestore_repo.py` als voorbeeld van FieldFilter, Vector en batch-writes. De rest laat je staan tot de freeze en verwijder je dan; niet eerder, zodat niemand blokkeert op een verdwenen import.
+
+## Demo-scenario's (D schrijft ze uit, A oefent ze)
+
+1. **Terugkerende beller:** derde keer over vakantiegeld → historie vult zich, topscore > 85.
+2. **Nieuw persoon, bekend bedrijf:** beller-historie leeg, bedrijfshistorie vol, oplossing hergebruikt.
+3. **Onbekend probleem:** scores < 50, dashboard toont "geen sterke match, escaleer".
+
+## Open punten
+
+- Exacte veldnamen van de ElevenLabs post-call payload en de signature-header: A controleert tegen de actuele docs en meldt afwijkingen aan B.
+- ElevenLabs verwerkt audio standaard buiten de EU; EU-residency is een productievoorwaarde, staat in de README als open punt.
+- Telefoonnummer (Twilio/SIP) alleen als er tijd over is; een browser-testgesprek volstaat voor de demo.
