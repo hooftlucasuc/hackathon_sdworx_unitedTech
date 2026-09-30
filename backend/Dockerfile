@@ -17,7 +17,10 @@ WORKDIR /srv
 # dependencies first for layer caching
 COPY pyproject.toml ./
 RUN mkdir app && touch app/__init__.py \
-    && if [ "$EMBEDDING_PROVIDER" = "local" ]; then pip install ".[local]"; else pip install .; fi \
+    && if [ "$EMBEDDING_PROVIDER" = "local" ]; then \
+         pip install --index-url https://download.pytorch.org/whl/cpu torch \
+         && pip install ".[local]"; \
+       else pip install .; fi \
     && rm -rf app build *.egg-info
 
 COPY app ./app

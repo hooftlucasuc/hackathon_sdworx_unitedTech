@@ -120,7 +120,10 @@ Staat in de GCP-omgeving een org-policy die Vertex AI Gen AI blokkeert (`constra
 
 ```bash
 cd ~/hackathon_sdworck_unitedTech/backend
-pip install --user -e ".[local]"        # sentence-transformers + torch, enkele minuten
+# torch alleen als CPU-versie (de standaard sleept ~3GB CUDA mee en vult de Cloud Shell-schijf)
+pip cache purge || true
+pip install --user --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+pip install --user --no-cache-dir "sentence-transformers>=2.7,<6"
 export GCP_PROJECT=<project-id>
 export EMBEDDING_PROVIDER=local
 export EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
