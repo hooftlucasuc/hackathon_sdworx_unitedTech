@@ -85,7 +85,7 @@ function mapPartial(v: unknown): PartialUtterance | null {
   return typeof o.message === 'string' && o.message ? { role: str(o.role), message: o.message } : null;
 }
 
-function mapCall(id: string, d: DocumentData): Call {
+export function mapCall(id: string, d: DocumentData): Call {
   return {
     ...(withoutEmbedding(d) as Omit<Call, 'call_id'>),
     call_id: id,
@@ -104,7 +104,7 @@ function mapCall(id: string, d: DocumentData): Call {
   };
 }
 
-function mapSolution(id: string, d: DocumentData): Solution {
+export function mapSolution(id: string, d: DocumentData): Solution {
   const doc = d.document && typeof d.document === 'object' && typeof d.document.title === 'string' ? d.document : null;
   return {
     ...(withoutEmbedding(d) as Omit<Solution, 'solution_id'>),

@@ -25,7 +25,7 @@ Secrets: via omgevingsvariabelen lokaal, Secret Manager op Cloud Run, nooit in d
 - `backend/app/` — FastAPI-app (rol B): `webhook.py`, `api.py`, `pipeline.py` (parsing, ids, suggesties), `scoring.py`, `store.py` (enige plek met Firestore-calls), `embeddings.py`, `cli.py`.
 - `backend/samples/` — fictieve oplossingen en drie ElevenLabs-voorbeeldpayloads.
 - `frontend/` — dashboard (rol C).
-- `infra/` — `gcp_setup.sh` (GCP, rol B), `firebase_setup.sh` en `firestore.rules` (dashboard-toegang, rol D), `cloudbuild.backend.yaml` (GitHub-trigger → Cloud Run), Firestore-indexen.
+- `infra/` — `gcp_setup.sh` (GCP, rol B), `firebase_setup.sh` en `firestore.rules` (dashboard-toegang, rol D), `cloudbuild.{backend,listener,frontend}.yaml` (Cloud Run), `deploy_cloudrun.sh` (alle drie parallel), Firestore-indexen.
 - `data/seed/` + `scripts/` — fictieve dataset en seed/replay-scripts (rollen A en D).
 - `docs/` — ElevenLabs-agentconfig, demo-script, integratielog, Aikido-screenshots.
 
@@ -44,7 +44,7 @@ draaien:      cd backend && STORE_BACKEND=memory DEMO_MODE=true ELEVENLABS_WEBHO
 seed:         python scripts/seed.py --reset --yes     (demo-dataset uit data/seed/, via de backend-pipeline)
               cd backend && python -m app.cli load-solutions samples/solutions.json   (alleen B's voorbeeldoplossingen)
 testen:       cd backend && pytest && ruff check app tests
-deployen:     push naar main (Cloud Build-trigger), zie docs/backend.md
+deployen:     ./infra/deploy_cloudrun.sh in Cloud Shell (backend, luisteraar, dashboard), of push naar main (trigger), zie docs/backend.md
 ```
 
 ## Verwijzingen
@@ -61,3 +61,4 @@ deployen:     push naar main (Cloud Build-trigger), zie docs/backend.md
 | 2026-09-30 | Backend rol B gebouwd: webhook met HMAC, Firestore-transacties, Vertex-embeddings via google-genai, score, alle routes, Cloud Build-deploy vanaf GitHub; TrustCard-modules uit `backend/` verwijderd | Twee service accounts met minimale rollen (runtime en deployer); webhook-secret in Secret Manager, fail closed zonder secret; geen audio of namen in logs; Cloud Run publiek voor de webhook, optionele `API_KEY` voor de overige routes |
 | 2026-09-30 | Gedeelde taken toegevoegd (`TEAMPLAN.md` §6); backend kreeg `escalate`-vlag met `ESCALATION_THRESHOLD` en `load-calls` voor historische seed-calls | Open securitypunt: Firestore rules en Firebase Auth voor het dashboard, anders zijn calls met persoonsgegevens publiek leesbaar |
 | 2026-09-30 | Seed-data met trust-signalen (land, eigenaar, reviewdatum, conflicten); United Consulting als klant met fictieve contactpersoon Lindsey Tafels | Eén bestaand bedrijf in een publieke repo: alleen verzonnen cases, geen echte payrollgegevens |
+| 2026-09-30 | Luisteraar als eigen Cloud Run-service (`/medewerker`, `/beller`); dashboard kan zonder Firebase via `VITE_DATA_SOURCE=api` (pollt de REST-API); builds met BuildKit-cache en model-laag vóór de code | ElevenLabs API-key in Secret Manager (`elevenlabs-api-key`), nooit in de browser (single-use token). Open punt: `/token` en `/state` van de luisteraar zijn publiek, dus iedereen met de URL kan tokens op onze credits halen en transcripten lezen; credit limit op de key en services weghalen na de demo |

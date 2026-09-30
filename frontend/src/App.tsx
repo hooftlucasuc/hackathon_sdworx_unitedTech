@@ -8,7 +8,7 @@ import { config, switchSource } from './config';
 import { useCall, useCallsBy, useCaller, useCompany, useRecentCalls } from './data/hooks';
 import { clearError, clearErrorIf, reportErrorIfNone, subscribeErrors } from './errors';
 
-const NO_CONNECTION = 'No data from Firestore after 8 seconds. Check the connection.';
+const NO_CONNECTION = 'No data from the live source after 8 seconds. Check the connection.';
 
 export default function App() {
   const recent = useRecentCalls(15);
@@ -43,6 +43,7 @@ export default function App() {
         </div>
         <div className="topbar-actions">
           <SourceIndicator />
+          <ListenerLinks />
           {config.demoMode && <DemoMenu onStarted={() => setPinned(null)} />}
           <button className="btn btn-quiet" onClick={() => setDrawer(true)}>
             Calls
@@ -54,7 +55,7 @@ export default function App() {
         <div className="error-banner" role="alert">
           <span>{error}</span>
           <span className="banner-actions">
-            {config.dataSource === 'firestore' && (
+            {config.live && (
               <button className="btn primary" onClick={() => switchSource('demo')}>
                 Switch to demo data
               </button>
@@ -120,8 +121,27 @@ export default function App() {
   );
 }
 
+// One call id per dashboard load, so both listener screens fill the same call.
+const LISTEN_CALL_ID = `gesprek-${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+
+/** Links to the listener on Cloud Run: one screen per speaker. */
+function ListenerLinks() {
+  if (!config.listenerUrl) return null;
+  const href = (rol: string) => `${config.listenerUrl}/${rol}?gesprek=${encodeURIComponent(LISTEN_CALL_ID)}`;
+  return (
+    <span className="listener-links">
+      <a className="btn btn-quiet" href={href('medewerker')} target="_blank" rel="noreferrer">
+        Listener: agent
+      </a>
+      <a className="btn btn-quiet" href={href('beller')} target="_blank" rel="noreferrer">
+        Listener: caller
+      </a>
+    </span>
+  );
+}
+
 function SourceIndicator() {
-  if (config.dataSource === 'firestore') return <span className="source live">● Live</span>;
+  if (config.live) return <span className="source live">● Live</span>;
   return (
     <span className="source">
       ● Demo data
@@ -155,7 +175,7 @@ function useNewCallFlash(latestId: string | null): string | null {
 /** Offline, Firestore reports no error but keeps waiting: after 8 s without data we show the banner. */
 function useConnectionWatch(hasData: boolean): void {
   useEffect(() => {
-    if (config.dataSource !== 'firestore') return;
+    if (!config.live) return;
     if (hasData) {
       clearErrorIf(NO_CONNECTION);
       return;
