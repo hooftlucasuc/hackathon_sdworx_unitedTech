@@ -91,8 +91,19 @@ De gemini-variant is getest in het Qwiklabs-project (2026-09-30) en daar geblokk
 de org policy `constraints/vertexai.allowedModels` staat op `denyAll`, dus elk
 Gen AI-model geeft `400 FAILED_PRECONDITION` (getest: `gemini-2.5-flash`, `-flash-lite`,
 `-pro`). Auth, project en Vertex-API werken wel; de code zelf is dus niet het probleem.
-Voor de demo draait de verzamelaar op `--extractor rules`. De gemini-variant werkt pas
-in een GCP-project waar Vertex-modellen toegestaan zijn.
+
+Test je met een vers `gcloud auth application-default login`, dan zie je eerst iets anders:
+`403 PERMISSION_DENIED` op `aiplatform.endpoints.predict`, in elke regio (`europe-west1`,
+`europe-west4`, `us-central1`, `global`). Dat is dezelfde muur, een laag eerder — zo'n
+account mist `roles/aiplatform.user`, en ook `serviceusage.services.use` om een
+quotaproject op ADC te zetten. Vier regio's dezelfde fout betekent dus: project, niet regio.
+
+Voor de demo draait de verzamelaar op `--extractor rules`. Dat is geen noodgreep die stuk
+gaat tijdens de opname: de drie demoscenario's beginnen allemaal met een beller die zich
+voorstelt, en daar is de regelvariant op gemaakt. De gemini-variant werkt pas in een
+GCP-project waar Vertex-modellen toegestaan zijn — of, als dat niet lukt voor de freeze,
+met een Gemini-sleutel van AI Studio, wat andere auth is en dus een `api_key`-variant van
+`extract_gemini` vraagt.
 
 ## Draaien
 
