@@ -15,6 +15,7 @@ Een medewerker vindt drie antwoorden op dezelfde vraag: één recent, één zond
 | What applies in this context? | Land per oplossing, vergeleken met het land van de klant |
 | Where are the gaps? | Open calls zonder oplossing en "geen sterke match, escaleer" |
 | Who has relevant expertise? | Doorverwijzing naar de eigenaar van het domein |
+| Which company is this really? | Het bedrijf van de beller wordt opgezocht in de KBO: één treffer, meerdere treffers ("bevestig welk") of niet gevonden |
 
 Elke afgehandelde call ("werkte" / "werkte niet") past de succesratio aan: de kennisbank leert van wat in de praktijk werkt.
 
@@ -46,6 +47,8 @@ cp .env.example .env                                 # vul GCP_PROJECT en de Ele
 cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev,local]" && cd ..
 python scripts/seed.py --check                       # valideren zonder GCP
 python scripts/seed.py --reset --yes                 # Firestore vullen; toont ook de scores van de demo-scenario's
+# optioneel: KBO-controle van de seed-bedrijven opnieuw maken (data/seed/kbo.json staat al in de repo)
+python scripts/kbo_lookup.py <pad-naar>/KboOpenData_<nr>_<datum>_Full.zip
 
 
 # 3. Backend
@@ -68,7 +71,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 
 ## Privacy en GDPR
 
-- **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De fictieve bedrijfsnamen zijn gecontroleerd tegen de KBO Open Data (snapshot 29-09-2026): geen enkele bestaat als onderneming, zodat er geen verzonnen problemen aan een echt bedrijf hangen. De kennisbank is een illustratie en geen juridisch advies.
+- **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De fictieve bedrijfsnamen zijn gecontroleerd tegen de KBO Open Data (snapshot 29-09-2026): geen enkele bestaat als onderneming, zodat er geen verzonnen problemen aan een echt bedrijf hangen. Bron van de KBO-gegevens: KBO Open Data, FOD Economie (snapshot 29-09-2026); daarvan bewaren we alleen publieke gegevens van rechtspersonen, nooit van eenmanszaken. De kennisbank is een illustratie en geen juridisch advies.
 - **Wat we bewaren:** transcript en de geëxtraheerde velden (naam, bedrijf, probleem, categorie, urgentie). **Geen audio.** Namen en transcripten komen nooit in logregels.
 - **Waar:** Firestore en Cloud Run draaien in `europe-west1`. De embeddings worden in de backend zelf berekend (lokaal meertalig model), dus probleemteksten gaan niet naar een extern AI-model.
 - **Toegang:** de browser kan alleen lezen, en alleen na Firebase-login; schrijven kan uitsluitend de backend (Firestore security rules). Voor de demo is dat een anonieme login: wie de URL van het dashboard heeft, kan de fictieve calls lezen. Voor productie hoort hier SSO van SD Worx met rollen, zodat alleen consultants hun eigen klanten zien. De webhook weigert verzoeken zonder geldige HMAC-signature.

@@ -5,7 +5,8 @@ embeddings, suggesties en tellers zijn identiek aan wat de webhook zou doen. Dat
 in de JSON en worden hier omgerekend ten opzichte van nu, zodat recency op de demodag klopt.
 
 Een tweede pas vult aan wat de pipeline niet kent: trust-signalen op solutions (country, source,
-owner_expert, last_reviewed_at, conflicts_with), sector/size/country op companies en role op callers.
+owner_expert, last_reviewed_at, conflicts_with), sector/size/country en de KBO-controle (kbo) op companies,
+en role op callers. De KBO-treffers komen uit data/seed/kbo.json (gemaakt met scripts/kbo_lookup.py).
 
 Gebruik (backend-venv actief, vanuit de repo-root):
   python scripts/seed.py --check          # alleen valideren, geen GCP
@@ -156,7 +157,17 @@ def merge(store, collection: str, doc_id: str, fields: dict[str, Any]) -> None:
         getattr(store, collection).setdefault(doc_id, {}).update(fields)
 
 
-def enrich(store, companies, callers, solutions, experts, payloads, now: datetime) -> None:
+def kbo_field(kbo: Optional[dict[str, Any]], company_id: str) -> Optional[dict[str, Any]]:
+    """KBO-controle voor het dashboard: uniek, meerdere (bevestigen) of niet_gevonden."""
+    if not kbo or company_id not in kbo.get("companies", {}):
+        return None
+    matches = kbo["companies"][company_id]
+    status = "niet_gevonden" if not matches else "uniek" if len(matches) == 1 else "meerdere"
+    return {"status": status, "matches": matches, "source": kbo.get("source"), "snapshot": kbo.get("snapshot")}
+
+
+def enrich(store, companies, callers, solutions, experts, payloads, now: datetime,
+           kbo: Optional[dict[str, Any]] = None) -> None:
     from app.pipeline import caller_id_for, company_id_for
 
     experts_by_id = {e["id"]: e for e in experts}
@@ -178,8 +189,9 @@ def enrich(store, companies, callers, solutions, experts, payloads, now: datetim
             "last_used_at": max(candidates) if candidates else None,
         })
     for c in companies:
-        merge(store, "companies", company_id_for(c["name"]),
-              {"sector": c["sector"], "size": str(c["size"]), "country": c["country"]})
+        cid = company_id_for(c["name"])
+        merge(store, "companies", cid, {"sector": c["sector"], "size": str(c["size"]), "country": c["country"],
+                                         "kbo": kbo_field(kbo, cid)})
     for c in callers:
         if c.get("role"):
             merge(store, "callers", caller_id_for(c["name"], company_id_for(c["company"])), {"role": c["role"]})
@@ -270,7 +282,9 @@ def main() -> int:
     log.info("solutions: %d geladen", n)
     stats = load_calls(store, embedder, payloads, settings.escalation_threshold)
     log.info("calls: %(created)d aangemaakt, %(skipped)d bestonden al, %(resolved)d opgelost", stats)
-    enrich(store, data["companies"], data["callers"], data["solutions"], data["experts"], payloads, now)
+    kbo_file = SEED_DIR / "kbo.json"
+    kbo = json.loads(kbo_file.read_text(encoding="utf-8")) if kbo_file.exists() else None
+    enrich(store, data["companies"], data["callers"], data["solutions"], data["experts"], payloads, now, kbo)
     log.info("trust-signalen, bedrijfsgegevens en rollen bijgeschreven")
 
     caller, company = store.get_caller(DEMO_IDS["caller"]), store.get_company(DEMO_IDS["company"])
