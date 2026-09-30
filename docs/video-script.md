@@ -51,7 +51,7 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 **Beeld:** inzoomen op de top-oplossing, uitleg openklappen (drie balkjes, eigenaar, reviewdatum).
 
 **VO:**
-> Bovenaan: het beleid over vertrekvakantiegeld. Score 89. Je ziet waarom: het past bij de vraag, het werkte in acht op de tien gesprekken, en An Wouters van Payroll België heeft het veertig dagen geleden nog nagekeken.
+> Bovenaan: het beleid over vertrekvakantiegeld. Score 83. Je ziet waarom: het past bij de vraag, het werkte in acht op de tien gesprekken, en An Wouters van Payroll België heeft het veertig dagen geleden nog nagekeken.
 
 **Beeld:** scrollen naar de oude handboekversie met conflictwaarschuwing, daarna naar de Nederlandse oplossing met het label "geldt voor NL".
 
@@ -113,6 +113,6 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 ## Nog in te vullen
 
 - [ ] Gemeten tijd tussen ophangen en verschijnen op het dashboard (scène 3)
-- [ ] Werkelijke topscore van scenario a (nu 89 in het script, uit de kalibratie in `demo-script.md`)
+- [ ] Werkelijke topscore van scenario a bij de opname (gekalibreerd op 83, zie `demo-script.md`)
 - [ ] Aantal Aikido-bevindingen voor en na (scène 6)
 - [ ] Wie spreekt de VO in, wie monteert

@@ -33,7 +33,7 @@ Afspelen: open `media/vo/<engine>/lindsey.html` (knoppen per fragment) op een **
 Verwacht op het dashboard:
 - Beller-historie: 3 afgehandelde calls van Lindsey, waarvan 2 over vakantiegeld (60 en 150 dagen geleden), en **3 openstaande cases**: mobiliteitsbudget (14 dagen), cafetariaplan (6 dagen), maaltijdcheques bij de klant (2 dagen). Zeg in de voice-over: *"De medewerker ziet meteen dat Lindsey nog drie vragen open heeft staan, en kan die in hetzelfde gesprek meenemen."*
 - Bedrijf United Consulting: 6 calls, 3 open issues.
-- Top-oplossing: **vg-01 Vertrekvakantiegeld van een bediende**, score boven 85. Uitleg: hoge similarity, ±80% succes, recent gebruikt, eigenaar An Wouters (Payroll BE), nagekeken 40 dagen geleden.
+- Top-oplossing: **vg-01 Vertrekvakantiegeld van een bediende**, score ±83 (gemeten, zie kalibratie). Uitleg: hoge similarity, ±80% succes, recent gebruikt, eigenaar An Wouters (Payroll BE), nagekeken 40 dagen geleden.
 - Lager in de lijst: **vg-04**, de oude handboekversie zonder eigenaar, met een waarschuwing dat ze tegenstrijdig is met vg-01. Wijs daarop: *het systeem toont niet alleen een antwoord, maar ook welk antwoord je níet moet vertrouwen.*
 - **vg-05** (Nederland) scoort qua tekst hoog, maar krijgt het label "geldt voor NL". Voor deze Belgische klant is dat niet van toepassing.
 
@@ -78,9 +78,11 @@ Verwacht op het dashboard:
 
 | Scenario | Topscore verwacht | Gemeten | Topsimilarity | OK? |
 |---|---|---|---|---|
-| a | > 85 | | | |
-| b | > 75 | | | |
-| c | onder de escalatiedrempel | | | |
+| a | boven 80 | 83 (vg-01; 2e vg-02 77) | 0,79 | ✅ |
+| b | boven 80 | 83 (mc-01; 2e ov-05 76) | 0,87 | ✅ |
+| c | onder 80, escaleert | 63 (geen passende oplossing) | 0,46 | ✅ |
 
 De gemeten waarden komen uit `python scripts/seed.py --probe`: dat scoort de drie scenario's tegen de kennisbank zonder iets te schrijven.
-De backend escaleert als de beste score onder `ESCALATION_THRESHOLD` ligt (standaard 60, via de trigger-substitutie `_ESCALATION_THRESHOLD`). Haalt c die drempel niet, verhoog hem dan tot net boven de topscore van c en onder die van b, en meld het aan B en C.
+Gemeten op 30/09 met het lokale model van Cloud Run (`paraphrase-multilingual-MiniLM-L12-v2`, 384 dims), in het geheugen met de volledige seed. Acht herformuleerde vragen die in de kennisbank zitten, scoorden 83 tot 89 (juiste oplossing telkens bovenaan); acht vragen die er niet in zitten, 63 tot 77. **Drempel: 80.** Met de standaardwaarde 60 escaleert niets, ook scenario c niet. De marge is klein (3 punten aan beide kanten): controleer bij de integratietest de echte scores, want de agent formuleert het probleem net anders dan hier. Zakt a of b onder 80, verlaag dan naar 78.
+
+De backend escaleert als de beste score onder `ESCALATION_THRESHOLD` ligt (via de trigger-substitutie `_ESCALATION_THRESHOLD`, dus **80** zetten). Haalt c die drempel niet, verhoog hem dan tot net boven de topscore van c en onder die van b, en meld het aan B en C.
