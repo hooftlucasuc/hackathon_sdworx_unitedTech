@@ -92,7 +92,7 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 **Beeld:** architectuurdiagram uit de README (5 s), dan de Aikido-screenshots voor en na naast elkaar (5 s), dan een shot van de Firestore-regio `europe-west1` (3 s).
 
 **VO:**
-> Onder de motorkap: ElevenLabs voor het gesprek, Google Cloud voor de rest. De score is deterministisch en uitlegbaar, zonder taalmodel. Alles staat in Europa, er wordt geen audio bewaard, en de assistent zegt vanaf de eerste zin dat hij een AI is. Aikido vond X problemen bij de start; na de fixes blijven er Y over.
+> Onder de motorkap: ElevenLabs transcribeert het gesprek live, Google Cloud doet de rest. De score is deterministisch en uitlegbaar, zonder taalmodel. Alles staat in Europa, er wordt geen audio bewaard — alleen de transcript en de vijf velden — en de beller hoort aan het begin dat er een AI meeluistert. Aikido vond X problemen bij de start; na de fixes blijven er Y over.
 
 (Vul X en Y in na de tweede scan.)
 
@@ -110,7 +110,7 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 - **Neem op in delen**, niet in één take: elke scène apart, zodat een mislukt gesprek niet alles kost. Tussen de takes: `python scripts/seed.py --reset --yes`.
 - **Back-up:** neem één volledige geslaagde run op zodra de integratietest lukt, ook als die nog niet mooi is.
 - **Scherm:** browser op 100% zoom, bladwijzerbalk verborgen, geen andere tabs, geen `.env` of terminal met secrets in beeld.
-- **Gesprekken inkorten:** laat de eerste zin van de agent (AI-melding) en de vraag van de beller staan, knip de rest of versnel.
+- **Gesprekken inkorten:** laat de toestemmingszin van de medewerker en de vraag van de beller staan, knip de rest of versnel.
 - **Ondertitels** bij alle gesprekken; de jury kijkt mogelijk zonder geluid.
 - **Taal:** gesprekken in het Nederlands. VO in het Nederlands, met Engelse ondertitels als de jury niet volledig Nederlandstalig is (navragen).
 - **Hosting:** YouTube (niet vermeld) of Drive met "iedereen met de link". Test de link in een incognitovenster.
