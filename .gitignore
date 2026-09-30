@@ -38,3 +38,6 @@ frontend/dist/
 .DS_Store
 .idea/
 .vscode/
+
+# gegenereerde media (voice-over, opnames)
+media/
