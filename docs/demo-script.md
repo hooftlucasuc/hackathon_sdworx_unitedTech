@@ -1,7 +1,7 @@
 # Demo-script CallSight
 
-Drie gesprekken voor de video (< 3 min in totaal). Lindsey Tafels (Comp & Ben, United Consulting) belt in scenario a, A speelt de bellers in b en c, iemand anders bedient het dashboard.
-Lindsey neemt deel met toestemming; haar cases in de seed zijn verzonnen. Alle andere personen en bedrijven zijn fictief. Alles staat in `data/seed/`.
+Drie gesprekken voor de video (< 3 min in totaal). In scenario a belt Lindsey Tafels (Comp & Ben, United Consulting); A speelt alle bellers, iemand anders bedient het dashboard.
+Alle personen zijn fictief, ook Lindsey. United Consulting is het enige bestaande bedrijf; de cases ervan zijn verzonnen. Alles staat in `data/seed/`.
 
 ## Voorbereiding (voor elke take)
 

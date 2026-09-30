@@ -9,7 +9,7 @@ Eigenaar: Lucas Hooft (team van vier, zie `TEAMPLAN.md` §2)
 
 ## Security
 Gevoeligheid: **4** — gespreksdata is persoonsgegevens (naam beller, stem, werkgever, probleemomschrijving). Secrets (ElevenLabs API key, webhook-secret, GCP service-account key) zijn niveau 5 en staan alleen in `.env` / Secret Manager.
-Maatregelen: fictieve data in de PoC (uitzondering: één demo-beller met toestemming); geen audio bewaard, alleen transcript + geëxtraheerde velden; geen namen of transcripten in logs; webhook met HMAC-signature; opslag uitsluitend `europe-west1`; CORS alleen op de dashboard-origin.
+Maatregelen: fictieve data in de PoC (uitzondering: United Consulting als bestaand klantbedrijf, met verzonnen cases); geen audio bewaard, alleen transcript + geëxtraheerde velden; geen namen of transcripten in logs; webhook met HMAC-signature; opslag uitsluitend `europe-west1`; CORS alleen op de dashboard-origin.
 Secrets: via omgevingsvariabelen lokaal, Secret Manager op Cloud Run, nooit in de code. `.gitignore` sluit `.env`, `sa-key.json` en `*.pem` uit.
 
 ## Stack
@@ -33,7 +33,7 @@ Secrets: via omgevingsvariabelen lokaal, Secret Manager op Cloud Run, nooit in d
 - Het contract in `TEAMPLAN.md` §1 wijzigt alleen na melding aan alle vier.
 - Pydantic-modellen met `max_length` op vrije tekst; `logging`, geen `print`; `pathlib` voor paden.
 - Elke rol werkt op dummy-data van de buurrol tot de koppeling er is; `/demo/simulate-call` is de vaste testingang.
-- Geen echte personen of bedrijven in seed-data, screenshots of video. Enige uitzondering: Lindsey Tafels (United Consulting), demo-beller met toestemming; haar cases zijn verzonnen.
+- Geen echte personen of bedrijven in seed-data, screenshots of video. Enige uitzondering: United Consulting als klantbedrijf in de seed, met fictieve contactpersoon Lindsey Tafels en verzonnen cases.
 
 ## Commando's
 ```
@@ -53,4 +53,4 @@ testen:       cd backend && pytest
 |---|---|---|
 | 2026-09-30 | Start als TrustCard (kennis-trust-score); country-profielen, core-, store- en ingest-laag geschreven | Gevoeligheid 5 door API-keys; secrets via env |
 | 2026-09-30 | Pivot naar CallSight: ElevenLabs-gesprek → GCP → dashboard; `TEAMPLAN.md` met contract en prompts | Gevoeligheid blijft 4/5 maar nu door persoonsgegevens uit gesprekken: GDPR-sectie verplicht in README, geen audio-opslag, EU-residency van ElevenLabs is een open punt |
-| 2026-09-30 | Seed-data met trust-signalen (land, eigenaar, reviewdatum, conflicten); Lindsey Tafels als echte demo-beller | Eén echte naam in een publieke repo: alleen met haar toestemming, geen echte payrollgegevens |
+| 2026-09-30 | Seed-data met trust-signalen (land, eigenaar, reviewdatum, conflicten); United Consulting als klant met fictieve contactpersoon Lindsey Tafels | Eén bestaand bedrijf in een publieke repo: alleen verzonnen cases, geen echte payrollgegevens |

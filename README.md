@@ -64,7 +64,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 
 ## Privacy en GDPR
 
-- **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: Lindsey Tafels (United Consulting) speelt de beller in de demo, met haar toestemming; haar cases in de seed zijn verzonnen. De kennisbank is een illustratie en geen juridisch advies.
+- **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De kennisbank is een illustratie en geen juridisch advies.
 - **Wat we bewaren:** transcript en de geëxtraheerde velden (naam, bedrijf, probleem, categorie, urgentie). **Geen audio.** Namen en transcripten komen nooit in logregels.
 - **Waar:** Firestore, Vertex AI en Cloud Run draaien in `europe-west1`.
 - **Toegang:** het dashboard leest alleen na login (Firestore security rules); schrijven kan uitsluitend de backend. De webhook weigert verzoeken zonder geldige HMAC-signature.
