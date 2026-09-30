@@ -41,6 +41,18 @@ GREEN, RED, DIM, BOLD, RESET = "\033[32m", "\033[31m", "\033[2m", "\033[1m", "\0
 _checks = {"pass": 0, "fail": 0}
 
 
+def _parse(raw: bytes) -> Any:
+    """Return parsed JSON, or a short snippet of the raw body when it is not JSON (e.g. a 403 HTML page)."""
+    text = (raw or b"").decode("utf-8", "replace").strip()
+    if not text:
+        return None
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        snippet = " ".join(text.split())[:200]
+        return {"non_json_body": snippet}
+
+
 def check(ok: bool, label: str) -> None:
     mark = f"{GREEN}OK{RESET}" if ok else f"{RED}FOUT{RESET}"
     print(f"  [{mark}] {label}")
@@ -65,9 +77,9 @@ class HttpClient:
             req.add_header("Content-Type", "application/json")
         try:
             with urllib.request.urlopen(req, timeout=90) as resp:
-                return resp.status, json.loads(resp.read() or "null")
+                return resp.status, _parse(resp.read())
         except urllib.error.HTTPError as exc:
-            return exc.code, json.loads(exc.read() or "null")
+            return exc.code, _parse(exc.read())
         except (urllib.error.URLError, OSError) as exc:
             raise SystemExit(
                 f"\n{RED}Kan de backend niet bereiken op {self.base}{RESET}\n"
