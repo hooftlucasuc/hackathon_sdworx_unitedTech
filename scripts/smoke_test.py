@@ -54,6 +54,8 @@ def check(ok: bool, label: str) -> None:
 
 class HttpClient:
     def __init__(self, base: str):
+        # In Cloud Shell `localhost` resolves to IPv6 ::1 while uvicorn listens on IPv4; force 127.0.0.1.
+        base = base.replace("://localhost", "://127.0.0.1")
         self.base = base.rstrip("/")
 
     def _req(self, method: str, path: str, body: Optional[dict] = None) -> tuple[int, Any]:
@@ -62,10 +64,17 @@ class HttpClient:
         if data is not None:
             req.add_header("Content-Type", "application/json")
         try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
+            with urllib.request.urlopen(req, timeout=90) as resp:
                 return resp.status, json.loads(resp.read() or "null")
         except urllib.error.HTTPError as exc:
             return exc.code, json.loads(exc.read() or "null")
+        except (urllib.error.URLError, OSError) as exc:
+            raise SystemExit(
+                f"\n{RED}Kan de backend niet bereiken op {self.base}{RESET}\n"
+                f"  Reden: {exc}\n"
+                f"  Draait de server nog? Start hem in een apart tabblad (of met & op de achtergrond):\n"
+                f"    uvicorn app.main:app --host 127.0.0.1 --port 8080\n"
+            ) from exc
 
     def get(self, path: str) -> tuple[int, Any]:
         return self._req("GET", path)
