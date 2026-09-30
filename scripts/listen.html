@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CallSight luisteraar</title>
+<style>
+  :root { --ink:#1f2328; --muted:#6b7280; --line:#e5e7eb; --bg:#f6f7f8; --accent:#1a7f5a; }
+  * { box-sizing:border-box; }
+  body { margin:0; padding:24px; background:var(--bg); color:var(--ink);
+         font:15px/1.5 -apple-system,Segoe UI,Roboto,sans-serif; }
+  .wrap { max-width:780px; margin:0 auto; }
+  h1 { font-size:20px; margin:0 0 4px; }
+  p.sub { margin:0 0 20px; color:var(--muted); }
+  .panel { background:#fff; border:1px solid var(--line); border-radius:8px; padding:16px; margin-bottom:16px; }
+  label { display:block; font-size:12px; color:var(--muted); margin-bottom:4px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  .row > div { flex:1 1 150px; }
+  input, select { width:100%; padding:8px; border:1px solid var(--line); border-radius:6px; font:inherit; }
+  button { padding:9px 18px; border:0; border-radius:6px; font:inherit; font-weight:600; cursor:pointer;
+           background:var(--accent); color:#fff; }
+  button.stop { background:#b4232a; }
+  button:disabled { background:#c7ccd1; cursor:default; }
+  #status { margin-left:12px; font-size:13px; color:var(--muted); }
+  #partial { min-height:44px; color:var(--muted); font-style:italic; }
+  .seg { padding:6px 0; border-bottom:1px solid var(--line); }
+  .seg:last-child { border-bottom:0; }
+  .who { font-size:11px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin-right:8px; }
+  table { width:100%; border-collapse:collapse; }
+  td { padding:6px 0; vertical-align:top; }
+  td.k { width:140px; color:var(--muted); font-size:13px; }
+  td.v { font-weight:600; }
+  td.v.leeg { font-weight:400; color:#b0b6bd; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:#c7ccd1; margin-right:6px; }
+  .dot.live { background:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>CallSight luisteraar</h1>
+  <p class="sub">Luistert mee, zegt niets. Open dit scherm twee keer — één per spreker — met hetzelfde gesprek-id.</p>
+
+  <div class="panel">
+    <div class="row">
+      <div>
+        <label for="callId">Gesprek-id</label>
+        <input id="callId" value="">
+      </div>
+      <div>
+        <label for="speaker">Wie zit er aan deze microfoon</label>
+        <select id="speaker">
+          <option value="beller">beller</option>
+          <option value="medewerker">medewerker</option>
+        </select>
+      </div>
+      <div style="flex:0 0 auto">
+        <button id="toggle">Start luisteren</button>
+        <span id="status"><span class="dot"></span>uit</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <label>Wat de tool nu weet</label>
+    <table id="fields">
+      <tr><td class="k">beller</td><td class="v leeg" id="f-caller_name">—</td></tr>
+      <tr><td class="k">bedrijf</td><td class="v leeg" id="f-company_name">—</td></tr>
+      <tr><td class="k">probleem</td><td class="v leeg" id="f-problem">—</td></tr>
+      <tr><td class="k">categorie</td><td class="v leeg" id="f-category">—</td></tr>
+      <tr><td class="k">urgentie</td><td class="v leeg" id="f-urgency">—</td></tr>
+    </table>
+  </div>
+
+  <div class="panel">
+    <label>Transcript</label>
+    <div id="segments"></div>
+    <div id="partial"></div>
+  </div>
+</div>
+
+<script>
+const WS_BASE = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
+// Herhaald als aparte parameter, elk hoogstens 20 tekens. Eén komma-string is
+// één te lange keyterm en levert een kaal 1008 invalid_request op.
+const KEYTERMS = ["vakantiegeld","vertrekvakantiegeld","Dimona","DmfA","maaltijdcheques",
+  "ecocheques","RSZ","bedrijfsvoorheffing","paritair comite","C4","opzegtermijn",
+  "voordeel alle aard","gewaarborgd loon","loonrun"];
+const TARGET_RATE = 16000;
+
+const $ = (id) => document.getElementById(id);
+let ws = null, ctx = null, stream = null, node = null, source = null, poller = null, running = false;
+
+$("callId").value = "gesprek-" + new Date().toISOString().slice(11,19).replace(/:/g,"");
+
+function setStatus(text, live) {
+  $("status").innerHTML = '<span class="dot' + (live ? " live" : "") + '"></span>' + text;
+}
+
+function buildUrl(token) {
+  const p = new URLSearchParams({
+    model_id: "scribe_v2_realtime",
+    language_code: "nld",
+    commit_strategy: "vad",      // kleine letters; VAD wordt geweigerd
+    token: token,
+  });
+  KEYTERMS.forEach(t => p.append("keyterms", t));
+  return WS_BASE + "?" + p.toString();
+}
+
+// De browser geeft ons zelden precies 16 kHz. Lineair terugrekenen is ruim genoeg
+// voor spraak en scheelt een AudioWorklet.
+function toPcm16(float32, fromRate) {
+  const ratio = fromRate / TARGET_RATE;
+  const out = new Int16Array(Math.floor(float32.length / ratio));
+  for (let i = 0; i < out.length; i++) {
+    const s = Math.max(-1, Math.min(1, float32[Math.floor(i * ratio)]));
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+  }
+  return out;
+}
+
+function base64(int16) {
+  const bytes = new Uint8Array(int16.buffer);
+  let s = "";
+  for (let i = 0; i < bytes.length; i += 0x8000) {
+    s += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  }
+  return btoa(s);
+}
+
+function addSegment(speaker, text) {
+  const div = document.createElement("div");
+  div.className = "seg";
+  div.innerHTML = '<span class="who"></span><span></span>';
+  div.querySelector(".who").textContent = speaker;
+  div.querySelectorAll("span")[1].textContent = text;
+  $("segments").appendChild(div);
+  div.scrollIntoView({block:"nearest"});
+}
+
+async function refreshFields() {
+  try {
+    const r = await fetch("/state/" + encodeURIComponent($("callId").value));
+    if (!r.ok) return;
+    const data = await r.json();
+    for (const [key, value] of Object.entries(data.fields || {})) {
+      const cell = $("f-" + key);
+      if (!cell) continue;
+      cell.textContent = value || "—";
+      cell.classList.toggle("leeg", !value);
+    }
+  } catch (e) { /* de verzamelaar mag even weg zijn */ }
+}
+
+async function start() {
+  const callId = $("callId").value.trim();
+  const speaker = $("speaker").value;
+  if (!callId) { alert("Geef een gesprek-id."); return; }
+
+  setStatus("token ophalen…");
+  const tokenResponse = await fetch("/token");
+  if (!tokenResponse.ok) { setStatus("token mislukt"); return; }
+  const { token } = await tokenResponse.json();
+
+  setStatus("microfoon…");
+  stream = await navigator.mediaDevices.getUserMedia({
+    audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true }
+  });
+  ctx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: TARGET_RATE });
+  source = ctx.createMediaStreamSource(stream);
+  node = ctx.createScriptProcessor(4096, 1, 1);
+
+  ws = new WebSocket(buildUrl(token));
+  ws.onopen = () => { setStatus("luistert", true); running = true; $("toggle").textContent = "Stop"; $("toggle").className = "stop"; };
+  ws.onclose = (e) => { setStatus(running ? "verbinding dicht (" + e.code + ")" : "uit"); stop(true); };
+  ws.onerror = () => setStatus("fout op de verbinding");
+  ws.onmessage = (event) => {
+    const msg = JSON.parse(event.data);
+    if (msg.message_type === "partial_transcript") {
+      $("partial").textContent = msg.text || "";
+    } else if (msg.message_type === "committed_transcript") {
+      const text = (msg.text || "").trim();
+      $("partial").textContent = "";
+      if (!text) return;
+      addSegment(speaker, text);
+      fetch("/segment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ call_id: callId, speaker: speaker, text: text })
+      }).then(refreshFields);
+    } else if (["error","auth_error","quota_exceeded"].includes(msg.message_type)) {
+      setStatus(msg.message_type);
+    }
+  };
+
+  node.onaudioprocess = (e) => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    const pcm = toPcm16(e.inputBuffer.getChannelData(0), ctx.sampleRate);
+    ws.send(JSON.stringify({
+      message_type: "input_audio_chunk",
+      audio_base_64: base64(pcm),
+      commit: false,
+      sample_rate: TARGET_RATE
+    }));
+  };
+  source.connect(node);
+  node.connect(ctx.destination);
+  poller = setInterval(refreshFields, 2000);
+}
+
+function stop(fromClose) {
+  running = false;
+  if (poller) { clearInterval(poller); poller = null; }
+  if (node) { node.disconnect(); node.onaudioprocess = null; node = null; }
+  if (source) { source.disconnect(); source = null; }
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  if (ctx) { ctx.close(); ctx = null; }
+  if (ws && !fromClose) { ws.close(); }
+  ws = null;
+  $("toggle").textContent = "Start luisteren";
+  $("toggle").className = "";
+  if (!fromClose) setStatus("uit");
+}
+
+$("toggle").onclick = () => {
+  if (running) { stop(); } else { start().catch(e => { setStatus("fout: " + e.message); stop(); }); }
+};
+refreshFields();
+</script>
+</body>
+</html>

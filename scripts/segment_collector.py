@@ -318,7 +318,36 @@ def make_handler(collector: Collector):
 
         def do_GET(self) -> None:  # noqa: N802
             path = self.path.rstrip("/")
-            if path in ("/state", ""):
+            if path == "":
+                page = Path(__file__).with_name("listen.html")
+                data = page.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
+            if path == "/token":
+                # De browser krijgt nooit de API-key: een single-use token vervalt na
+                # 15 minuten en wordt bij gebruik verbruikt.
+                api_key = os.environ.get("ELEVENLABS_API_KEY", "").strip()
+                if not api_key:
+                    self._send(503, {"error": "ELEVENLABS_API_KEY ontbreekt"})
+                    return
+                request = urllib.request.Request(
+                    "https://api.elevenlabs.io/v1/single-use-token/realtime_scribe",
+                    data=b"",  # zonder body antwoordt de API met 411 Length Required
+                    method="POST",
+                )
+                request.add_header("xi-api-key", api_key)
+                try:
+                    with urllib.request.urlopen(request, timeout=15) as response:
+                        self._send(200, json.loads(response.read()))
+                except Exception as exc:  # noqa: BLE001
+                    log.error("token ophalen mislukt: %s", exc)
+                    self._send(502, {"error": "token ophalen mislukt"})
+                return
+            if path == "/state":
                 with collector.lock:
                     self._send(
                         200,
