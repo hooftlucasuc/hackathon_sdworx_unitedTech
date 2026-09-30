@@ -114,6 +114,28 @@ Verwacht: `created: true`, `suggestions: 5`, en bovenaan de vakantiegeld-oplossi
 - **Aan C:** `VITE_API_URL=$URL`. Staat het dashboard later op een andere origin, zet die in de trigger-substitutie `_FRONTEND_ORIGIN`, komma-gescheiden met `http://localhost:5173`.
 - **Aan D:** seed-data laadt via `load-solutions` en `load-calls`, zie stap 2. Zo gebruiken seed en backend gegarandeerd dezelfde ID's, hetzelfde embedding-model en dezelfde task types. De escalatiedrempel stel je bij met de trigger-substitutie `_ESCALATION_THRESHOLD`, standaard 60.
 
+## Vertex geblokkeerd? Lokale embeddings
+
+Staat in de GCP-omgeving een org-policy die Vertex AI Gen AI blokkeert (`constraints/vertexai.allowedModels` op `denyAll`, zoals in sommige Qwiklabs-labs), dan werkt geen enkel Vertex-embeddingmodel. Draai de embeddings dan lokaal in de backend, zonder Vertex:
+
+```bash
+cd ~/hackathon_sdworck_unitedTech/backend
+pip install --user -e ".[local]"        # sentence-transformers + torch, enkele minuten
+export GCP_PROJECT=<project-id>
+export EMBEDDING_PROVIDER=local
+export EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+export EMBEDDING_DIM=384
+
+# de vector-indexen staan op 768; zet ze op 384 (eenmalig)
+cd ~/hackathon_sdworck_unitedTech && EMBEDDING_DIM=384 ./infra/recreate_vector_indexes.sh
+
+cd backend
+python -m app.cli check                  # downloadt het model eenmalig, embedt en telt
+python -m app.cli load-solutions samples/solutions.json
+```
+
+`load-solutions` schrijft de vectoren en werkt ook terwijl de index nog bouwt; de zoekactie bij een call werkt zodra de 384-index `READY` is. De Cloud Build-config staat standaard al op de lokale provider (`_EMBEDDING_PROVIDER: local`, dim 384, 2Gi geheugen); waar Vertex wél mag, zet je die drie terug op `vertex` / `gemini-embedding-001` / `768` en draai je het indexscript met `EMBEDDING_DIM=768`.
+
 ## Lokaal draaien
 
 Zonder GCP, met een in-memory store en de voorbeelddata:
