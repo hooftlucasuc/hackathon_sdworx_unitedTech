@@ -1,44 +1,37 @@
-# Firestore indexes
+# Firestore-indexen
 
-All commands are run by `infra/gcp_setup.sh`. Listed here so they can be re-run by hand.
+`infra/gcp_setup.sh` maakt ze aan. Hier staan ze om met de hand opnieuw te draaien.
+Status: `gcloud firestore indexes composite list`.
 
-## Vector index on `chunks` (required for retrieval)
+## Vector-index op `solutions` (vector search van rol B)
 
-Pre-filters `country` and `status` (equality), then nearest-neighbour on `embedding`.
-Dimension must equal `EMBEDDING_DIM` in `.env` (768 for `gemini-embedding-001` with
-`output_dimensionality=768`; 384 for the local sentence-transformers fallback).
-
-```bash
-gcloud firestore indexes composite create \
-  --project="$GCP_PROJECT" \
-  --collection-group=chunks \
-  --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=country \
-  --field-config=order=ASCENDING,field-path=status \
-  --field-config=vector-config='{"dimension":"768","flat":"{}"}',field-path=embedding
-```
-
-## Composite indexes on `questions`
-
-`GET /questions` (own questions, newest first):
+Geen prefilter: een andere category wordt niet uitgesloten (TEAMPLAN §1.5).
+De dimensie moet gelijk zijn aan `EMBEDDING_DIM` (768 voor `gemini-embedding-001` met `output_dimensionality=768`).
 
 ```bash
-gcloud firestore indexes composite create --project="$GCP_PROJECT" \
-  --collection-group=questions --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=asked_by \
-  --field-config=order=DESCENDING,field-path=created_at
+gcloud firestore indexes composite create --collection-group=solutions --query-scope=COLLECTION \
+  --field-config=vector-config='{"dimension":"768","flat":"{}"}',field-path=problem_embedding
 ```
 
-`GET /expert/inbox` (assigned to me and escalated, newest first):
+Query aan de kant van B: `find_nearest(vector_field="problem_embedding", distance_measure=COSINE, limit=20)`,
+daarna herrangschikken op de totaalscore en de top 5 bewaren.
+
+## Historie-queries van het dashboard (rol C)
+
+`calls where caller_id == X orderBy started_at desc`:
 
 ```bash
-gcloud firestore indexes composite create --project="$GCP_PROJECT" \
-  --collection-group=questions --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=assigned_expert_id \
-  --field-config=order=ASCENDING,field-path=status \
-  --field-config=order=DESCENDING,field-path=created_at
+gcloud firestore indexes composite create --collection-group=calls --query-scope=COLLECTION \
+  --field-config=order=ASCENDING,field-path=caller_id \
+  --field-config=order=DESCENDING,field-path=started_at
 ```
 
-`GET /sources` uses `country in [X, ALL]` on `knowledge_items`, which needs no composite index.
+`calls where company_id == X orderBy started_at desc`:
 
-Check status: `gcloud firestore indexes composite list --project="$GCP_PROJECT"`.
+```bash
+gcloud firestore indexes composite create --collection-group=calls --query-scope=COLLECTION \
+  --field-config=order=ASCENDING,field-path=company_id \
+  --field-config=order=DESCENDING,field-path=started_at
+```
+
+`calls orderBy started_at desc limit 1` (live-scherm) gebruikt de automatische single-field index.
