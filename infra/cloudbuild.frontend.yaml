@@ -3,6 +3,7 @@
 #   gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.frontend.yaml \
 #     --service-account=projects/$P/serviceAccounts/callsight-deployer@$P.iam.gserviceaccount.com \
 #     --substitutions="^@^_API_BASE=https://callsight-backend-xxx.a.run.app@_DATA_SOURCE=firestore@_FIREBASE_API_KEY=...@_FIREBASE_APP_ID=..." .
+# Zonder Firebase: _DATA_SOURCE=api (pollt de backend), zie infra/deploy_cloudrun.sh.
 # The Firebase web config is public by design (it identifies the project; access is enforced by the
 # Firestore rules), so passing it as build args is fine. Never pass a server secret here.
 substitutions:
@@ -12,6 +13,8 @@ substitutions:
   _RUNTIME_SA: callsight-backend
   _DATA_SOURCE: mock
   _API_BASE: http://localhost:8080
+  # basis-URL van callsight-listener; leeg = geen luisteraar-links in de kop
+  _LISTENER_URL: ""
   _DEMO_MODE: "true"
   _FIREBASE_API_KEY: ""
   _FIREBASE_APP_ID: ""
@@ -21,12 +24,17 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 steps:
+  # inline cache: npm ci wordt overgeslagen zolang package-lock.json niet wijzigt
   - id: build
     name: gcr.io/cloud-builders/docker
+    env: [DOCKER_BUILDKIT=1]
     args:
       - build
+      - --cache-from=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
+      - --build-arg=BUILDKIT_INLINE_CACHE=1
       - --build-arg=VITE_DATA_SOURCE=${_DATA_SOURCE}
       - --build-arg=VITE_API_BASE=${_API_BASE}
+      - --build-arg=VITE_LISTENER_URL=${_LISTENER_URL}
       - --build-arg=VITE_DEMO_MODE=${_DEMO_MODE}
       - --build-arg=VITE_FIREBASE_API_KEY=${_FIREBASE_API_KEY}
       - --build-arg=VITE_FIREBASE_AUTH_DOMAIN=$PROJECT_ID.firebaseapp.com
@@ -35,11 +43,13 @@ steps:
       - --build-arg=VITE_FIREBASE_ANON_AUTH=${_FIREBASE_ANON_AUTH}
       - -t
       - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
       - frontend
 
   - id: push
     name: gcr.io/cloud-builders/docker
-    args: [push, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID"]
+    args: [push, --all-tags, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}"]
 
   - id: deploy
     name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim

@@ -112,6 +112,19 @@ Draai de drie beurten uit `samples/audio/` na elkaar met hetzelfde `--call-id` e
 springt de categorie op `vakantiegeld`, na beurt 3 gaat de urgentie naar `hoog`. Dat is
 het demo-verhaal in drie stappen, zonder dat er iemand hoeft te bellen.
 
+## Op Cloud Run
+
+`infra/deploy_cloudrun.sh` zet de verzamelaar als service `callsight-listener` neer, naast de
+backend en het dashboard. De pagina kiest de spreker uit het pad: `/medewerker` en `/beller`,
+met `?gesprek=<id>` voor een gedeeld gesprek-id. Het dashboard toont beide als knop in de kop,
+met één id per keer dat het dashboard laadt.
+
+- Eén instance (`--max-instances=1`): de gesprekken staan in het geheugen van de verzamelaar.
+- `ELEVENLABS_API_KEY` komt uit Secret Manager; de browser krijgt alleen single-use tokens.
+- Elke zin stuurt een update naar `/demo/simulate-call`, die er een nieuwe call van maakt. Het
+  dashboard toont dus per zin een momentopname; de bovenste is de meest volledige. Eén call die
+  live bijwerkt vraagt de live-route uit [contract-live.md](contract-live.md).
+
 ## Wat er nog niet is
 
 - De browserpagina die een echte microfoon streamt. Het protocol is bewezen met

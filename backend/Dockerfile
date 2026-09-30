@@ -13,8 +13,11 @@ ARG EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ENV HF_HOME=/srv/models SENTENCE_TRANSFORMERS_HOME=/srv/models
 
 WORKDIR /srv
+RUN useradd --uid 10001 --no-create-home appuser
 
-# dependencies first for layer caching
+# Order matters for the build cache (infra/cloudbuild.backend.yaml builds with --cache-from :latest):
+# dependencies and the model only rebuild when pyproject.toml or EMBEDDING_MODEL change, a code
+# change only reruns the last two layers.
 COPY pyproject.toml ./
 RUN mkdir app && touch app/__init__.py \
     && if [ "$EMBEDDING_PROVIDER" = "local" ]; then \
@@ -23,16 +26,20 @@ RUN mkdir app && touch app/__init__.py \
        else pip install .; fi \
     && rm -rf app build *.egg-info
 
+# pre-download the embedding model at build time (only for the local provider); chown in the same
+# layer, a separate `chown -R` would copy the whole model into a new layer on every build
+RUN mkdir -p /srv/models \
+    && if [ "$EMBEDDING_PROVIDER" = "local" ]; then \
+         python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('$EMBEDDING_MODEL')"; \
+       fi \
+    && chown -R appuser /srv/models
+# the model is baked in: no Hugging Face lookups on a cold start
+ENV HF_HUB_OFFLINE=1
+
 COPY app ./app
 COPY samples ./samples
 RUN pip install --no-deps .
 
-# pre-download the embedding model at build time (only for the local provider)
-RUN if [ "$EMBEDDING_PROVIDER" = "local" ]; then \
-      python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('$EMBEDDING_MODEL')"; \
-    fi
-
-RUN useradd --uid 10001 --no-create-home appuser && chown -R appuser /srv
 USER appuser
 
 # Cloud Run injects PORT (8080 by default)

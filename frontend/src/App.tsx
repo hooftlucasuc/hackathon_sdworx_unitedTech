@@ -12,7 +12,7 @@ import { DEMO_SCENARIOS, type DemoScenario } from './data/demoPayloads';
 import { useCall, useCallsBy, useCaller, useCompany, useRecentCalls } from './data/hooks';
 import { clearError, clearErrorIf, reportError, reportErrorIfNone, subscribeErrors } from './errors';
 
-const NO_CONNECTION = 'Na 8 seconden nog geen gegevens van Firestore. Controleer de verbinding.';
+const NO_CONNECTION = 'Na 8 seconden nog geen gegevens van de live bron. Controleer de verbinding.';
 
 export default function App() {
   const recent = useRecentCalls(15);
@@ -41,6 +41,7 @@ export default function App() {
           <span className="divider" aria-hidden="true" />
           <span className="logo">CallSight</span>
           <SourceIndicator />
+          <ListenerLinks />
         </div>
         {config.demoMode && <DemoBar onStarted={() => setPinned(null)} />}
       </header>
@@ -49,7 +50,7 @@ export default function App() {
         <div className="error-banner" role="alert">
           <span>{error}</span>
           <span className="banner-actions">
-            {config.dataSource === 'firestore' && (
+            {config.live && (
               <button className="btn primary" onClick={() => switchSource('demo')}>
                 Overschakelen naar demodata
               </button>
@@ -112,8 +113,27 @@ export default function App() {
   );
 }
 
+// Eén gesprek-id per keer dat het dashboard laadt, zodat beide schermen hetzelfde gesprek vullen.
+const LISTEN_CALL_ID = `gesprek-${new Date().toISOString().slice(11, 19).replace(/:/g, '')}`;
+
+/** Links naar de luisteraar op Cloud Run: één scherm per spreker. */
+function ListenerLinks() {
+  if (!config.listenerUrl) return null;
+  const href = (rol: string) => `${config.listenerUrl}/${rol}?gesprek=${encodeURIComponent(LISTEN_CALL_ID)}`;
+  return (
+    <span className="listener-links">
+      <a className="btn btn-quiet" href={href('medewerker')} target="_blank" rel="noreferrer">
+        Luisteraar medewerker
+      </a>
+      <a className="btn btn-quiet" href={href('beller')} target="_blank" rel="noreferrer">
+        Luisteraar beller
+      </a>
+    </span>
+  );
+}
+
 function SourceIndicator() {
-  if (config.dataSource === 'firestore') return <span className="source live">● Live</span>;
+  if (config.live) return <span className="source live">● Live</span>;
   return (
     <span className="source">
       ● Demodata
@@ -173,7 +193,7 @@ function useNewCallFlash(latestId: string | null): string | null {
 /** Firestore meldt offline geen fout maar blijft wachten: na 8 s zonder data tonen we de banner. */
 function useConnectionWatch(hasData: boolean): void {
   useEffect(() => {
-    if (config.dataSource !== 'firestore') return;
+    if (!config.live) return;
     if (hasData) {
       clearErrorIf(NO_CONNECTION);
       return;

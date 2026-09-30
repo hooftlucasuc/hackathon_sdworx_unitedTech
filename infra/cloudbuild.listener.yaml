@@ -1,0 +1,47 @@
+# Cloud Build: bouw de luisteraar (scripts/) en deploy naar Cloud Run (europe-west1).
+# Normaal via infra/deploy_cloudrun.sh. Handmatig vanuit de repo-root:
+#   gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.listener.yaml \
+#     --service-account=projects/$P/serviceAccounts/callsight-deployer@$P.iam.gserviceaccount.com \
+#     --substitutions=_FORWARD_URL=https://callsight-backend-<nr>.europe-west1.run.app/demo/simulate-call .
+substitutions:
+  _REGION: europe-west1
+  _SERVICE: callsight-listener
+  _AR_REPO: callsight
+  _RUNTIME_SA: callsight-backend
+  _FORWARD_URL: ""
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: [build, -t, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID", scripts]
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: [push, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID"]
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+      - --region=${_REGION}
+      - --service-account=${_RUNTIME_SA}@$PROJECT_ID.iam.gserviceaccount.com
+      - --no-invoker-iam-check
+      # de gesprekken staan in het geheugen van de verzamelaar: één instance, anders zien de
+      # schermen van beller en medewerker elk een ander deel van hetzelfde gesprek
+      - --min-instances=0
+      - --max-instances=1
+      - --session-affinity
+      - --memory=256Mi
+      - --timeout=60
+      - --set-env-vars=FORWARD_URL=${_FORWARD_URL}
+      - --set-secrets=ELEVENLABS_API_KEY=elevenlabs-api-key:latest
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID

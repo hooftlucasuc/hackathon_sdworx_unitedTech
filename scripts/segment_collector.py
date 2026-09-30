@@ -317,8 +317,8 @@ def make_handler(collector: Collector):
             self._send(200, collector.add_segment(call_id, speaker, text))
 
         def do_GET(self) -> None:  # noqa: N802
-            path = self.path.rstrip("/")
-            if path == "":
+            path = self.path.split("?", 1)[0].rstrip("/")
+            if path in ("", "/beller", "/medewerker"):  # de pagina kiest de spreker uit het pad
                 page = Path(__file__).with_name("listen.html")
                 data = page.read_bytes()
                 self.send_response(200)
@@ -379,9 +379,13 @@ def make_handler(collector: Collector):
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--port", type=int, default=8600)
-    parser.add_argument("--extractor", default="rules", choices=sorted(EXTRACTORS))
-    parser.add_argument("--forward-url", default=None, help="POST elke bijgewerkte payload hierheen")
+    # Cloud Run geeft PORT, HOST=0.0.0.0 en FORWARD_URL mee als omgevingsvariabelen (scripts/Dockerfile).
+    parser.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8600")))
+    parser.add_argument("--extractor", default=os.environ.get("EXTRACTOR", "rules"), choices=sorted(EXTRACTORS))
+    parser.add_argument(
+        "--forward-url", default=os.environ.get("FORWARD_URL") or None, help="POST elke bijgewerkte payload hierheen"
+    )
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -393,9 +397,10 @@ def main() -> int:
     load_env(REPO_ROOT / ".env")
 
     collector = Collector(args.extractor, args.forward_url)
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), make_handler(collector))
+    server = ThreadingHTTPServer((args.host, args.port), make_handler(collector))
     log.info(
-        "luistert op http://127.0.0.1:%s/segment (extractor=%s, doorsturen naar %s)",
+        "luistert op http://%s:%s/segment (extractor=%s, doorsturen naar %s)",
+        args.host,
         args.port,
         args.extractor,
         args.forward_url or "niets",

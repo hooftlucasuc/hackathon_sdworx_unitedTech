@@ -1,17 +1,24 @@
 const env = import.meta.env;
 
-type Source = 'mock' | 'firestore';
+/** api = REST-API van B pollen, voor als Firebase er (nog) niet is. */
+type Source = 'mock' | 'firestore' | 'api';
 
-const envSource: Source = env.VITE_DATA_SOURCE === 'firestore' ? 'firestore' : 'mock';
+const envSource: Source =
+  env.VITE_DATA_SOURCE === 'firestore' ? 'firestore' : env.VITE_DATA_SOURCE === 'api' ? 'api' : 'mock';
 
 // Plan B op de demodag: ?bron=demo schakelt zonder herstart over naar demodata, ?bron=live terug.
 const override = new URLSearchParams(window.location.search).get('bron');
-const dataSource: Source = override === 'demo' ? 'mock' : override === 'live' ? 'firestore' : envSource;
+const liveSource: Source = envSource === 'mock' ? 'firestore' : envSource;
+const dataSource: Source = override === 'demo' ? 'mock' : override === 'live' ? liveSource : envSource;
 
 export const config = {
   dataSource,
+  /** Echte data (Firestore of API) in plaats van demodata. */
+  live: dataSource !== 'mock',
   overridden: dataSource !== envSource,
   apiBase: (env.VITE_API_BASE ?? 'http://localhost:8080').replace(/\/$/, ''),
+  /** Basis-URL van de luisteraar (scripts/segment_collector.py); leeg = geen links in de kop. */
+  listenerUrl: ((env.VITE_LISTENER_URL as string | undefined) ?? '').replace(/\/$/, ''),
   demoMode: env.VITE_DEMO_MODE === 'true',
   anonAuth: env.VITE_FIREBASE_ANON_AUTH === 'true',
   firebase: {

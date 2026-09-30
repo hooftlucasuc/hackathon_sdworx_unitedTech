@@ -54,6 +54,8 @@ button { font: inherit; color: inherit; }
 .demobar { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .source { font-size: 0.8rem; color: var(--muted); }
 .source.live { color: var(--sdw-blue); font-weight: 600; }
+.listener-links { display: flex; gap: 8px; flex-wrap: wrap; }
+.listener-links .btn { text-decoration: none; }
 
 .grid {
   display: grid; gap: 16px; padding: 20px 24px; max-width: 1640px; margin: 0 auto;

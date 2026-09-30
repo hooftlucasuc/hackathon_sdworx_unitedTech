@@ -90,7 +90,14 @@ const TARGET_RATE = 16000;
 const $ = (id) => document.getElementById(id);
 let ws = null, ctx = null, stream = null, node = null, source = null, poller = null, running = false;
 
-$("callId").value = "gesprek-" + new Date().toISOString().slice(11,19).replace(/:/g,"");
+// /beller of /medewerker kiest de spreker; ?gesprek=... geeft beide schermen hetzelfde id.
+const ROLE = location.pathname.replace(/\/+$/, "").split("/").pop();
+if (ROLE === "beller" || ROLE === "medewerker") {
+  $("speaker").value = ROLE;
+  document.title = "CallSight " + ROLE;
+}
+$("callId").value = new URLSearchParams(location.search).get("gesprek")
+  || "gesprek-" + new Date().toISOString().slice(11,19).replace(/:/g,"");
 
 function setStatus(text, live) {
   $("status").innerHTML = '<span class="dot' + (live ? " live" : "") + '"></span>' + text;
