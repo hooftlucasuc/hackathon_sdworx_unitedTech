@@ -85,6 +85,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 - **Transparantie (art. 50):** de agent zegt in de eerste zin dat de beller met een AI-assistent praat. Deze verplichting geldt sinds 2 augustus 2026.
 - **Risico:** het systeem vat een vraag samen en stelt oplossingen voor aan een medewerker. Het neemt geen beslissingen over personen, beoordeelt geen werknemers en valt daarmee niet onder de hoog-risicocategorieën van bijlage III.
 - **Mens in de lus:** een medewerker kiest de oplossing en belt terug. De score is uitlegbaar (drie deelwaarden) en het systeem escaleert zelf wanneer het geen sterke match heeft.
+- **Meetbaar per gesprek:** ElevenLabs beoordeelt na elk gesprek twee criteria: `intake_compleet` (naam, bedrijf en probleem zijn er) en `geen_advies` (de agent gaf geen inhoudelijk advies, bedrag of termijn en herhaalde geen naam van een werknemer). Zo is "de agent geeft geen advies" een uitkomst per gesprek in plaats van een belofte in een prompt (`docs/elevenlabs-agent.md` §5).
 
 ## Security
 
