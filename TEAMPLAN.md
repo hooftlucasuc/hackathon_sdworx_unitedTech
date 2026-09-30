@@ -240,7 +240,7 @@ Regels: geen echte persoonsgegevens, ook niet van teamleden, in seed-data of scr
 
 ## 5. Wat van de eerdere TrustCard-opzet blijft
 
-De TrustCard-modules in `backend/` zijn vervangen door de CallSight-backend (rol B, klaar, zie `docs/backend.md`). In de root staan nog `BUILD_SPEC.md`, `countries/` en `sources/` van het vorige plan; die gaan weg bij de freeze. `infra/gcp_setup.sh` is al de CallSight-versie, dus punt 1 van prompt D is gedaan.
+De TrustCard-modules in `backend/` zijn vervangen door de CallSight-backend (rol B, klaar, zie `docs/backend.md`). De TrustCard-restanten in de root zijn bij de freeze verwijderd. `infra/gcp_setup.sh` is al de CallSight-versie, dus punt 1 van prompt D is gedaan.
 
 ---
 
@@ -260,7 +260,7 @@ Deze punten hoorden bij geen enkele rol. Eigenaar en status per punt; werk de st
 | **Een gedeelde embedder** | De seed en de queries moeten met hetzelfde model, dezelfde task en dezelfde dimensie embedden. | Dezelfde module voor B en D | **Klaar.** `backend/app/embeddings.py`; oplossingen laden met `python -m app.cli load-solutions`. |
 | **Een drempel voor "escaleer"** | C toont de melding, maar niemand bepaalt wanneer. | D kalibreert op de seed-data, B zet de vlag in de response | **Gekalibreerd: 80.** Gemeten met het lokale model op de volledige seed: vragen die in de kennisbank zitten 83 tot 89, vragen die er niet in zitten 63 tot 77. Met 60 escaleert niets. **B:** `_ESCALATION_THRESHOLD: "80"` in de trigger. Details en marge: `docs/demo-script.md`, Kalibratie. |
 | **Nieuwe oplossing uit een call** | Het juryverhaal ("elke call maakt de kennisbank beter") heeft geen route die het waarmaakt. | Beslissen vóór de freeze: B of niet | Open beslissing. Nu stijgen alleen de tellers van bestaande oplossingen. Voorstel: `resolve` accepteert ook een nieuwe oplossingstekst en maakt daarmee een `solutions`-document met `source_call_id`. Ongeveer een halfuur werk voor B. |
-| **Opruimen van de TrustCard-bestanden bij de freeze** | Nu staat het er alleen als intentie. | D | Open. Verwijderen: `BUILD_SPEC.md`, `countries/`, `sources/` en de `sources`-regels in `.gitignore`. `backend/` is al opgeruimd. |
+| **Opruimen van de TrustCard-bestanden bij de freeze** | Nu staat het er alleen als intentie. | D | **Klaar.** Verwijderd bij de feature freeze, samen met de `sources`-regels in `.gitignore`. |
 
 ### Historische calls voor de seed (voor D)
 

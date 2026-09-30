@@ -87,8 +87,23 @@ twee smaken:
   de categorie op trefwoorden en de urgentie op tijdswoorden. **Dit is een vangnet, geen
   eindproduct**: het werkt op een beller die zich netjes voorstelt en verder niet.
 
-De gemini-variant is geschreven maar nog niet gedraaid — op de laptop waar dit gemaakt
-is stonden geen GCP-credentials. Die moet nog één keer echt langs voor de freeze.
+De gemini-variant is getest in het Qwiklabs-project (2026-09-30) en daar geblokkeerd:
+de org policy `constraints/vertexai.allowedModels` staat op `denyAll`, dus elk
+Gen AI-model geeft `400 FAILED_PRECONDITION` (getest: `gemini-2.5-flash`, `-flash-lite`,
+`-pro`). Auth, project en Vertex-API werken wel; de code zelf is dus niet het probleem.
+
+Test je met een vers `gcloud auth application-default login`, dan zie je eerst iets anders:
+`403 PERMISSION_DENIED` op `aiplatform.endpoints.predict`, in elke regio (`europe-west1`,
+`europe-west4`, `us-central1`, `global`). Dat is dezelfde muur, een laag eerder — zo'n
+account mist `roles/aiplatform.user`, en ook `serviceusage.services.use` om een
+quotaproject op ADC te zetten. Vier regio's dezelfde fout betekent dus: project, niet regio.
+
+Voor de demo draait de verzamelaar op `--extractor rules`. Dat is geen noodgreep die stuk
+gaat tijdens de opname: de drie demoscenario's beginnen allemaal met een beller die zich
+voorstelt, en daar is de regelvariant op gemaakt. De gemini-variant werkt pas in een
+GCP-project waar Vertex-modellen toegestaan zijn — of, als dat niet lukt voor de freeze,
+met een Gemini-sleutel van AI Studio, wat andere auth is en dus een `api_key`-variant van
+`extract_gemini` vraagt.
 
 ## Draaien
 
@@ -113,5 +128,5 @@ het demo-verhaal in drie stappen, zonder dat er iemand hoeft te bellen.
 - De browserpagina die een echte microfoon streamt. Het protocol is bewezen met
   bestandsaudio; de stap naar `getUserMedia` is klein maar nog niet gezet.
 - Het token-endpoint voor client-side gebruik.
-- De gemini-extractor tegen echte credentials.
+- De gemini-extractor in een project dat Vertex-modellen toelaat (Qwiklabs: `denyAll`).
 - Twee sessies tegelijk, met de medewerker op de tweede.

@@ -15,6 +15,8 @@ Bij elke oplossing staat **waarom ze te vertrouwen is**. Heeft de kennisbank gee
 
 Er is ook een tweede ingang, met dezelfde backend en dezelfde score: een ElevenLabs-agent neemt zelf op en stuurt na het gesprek een ondertekende webhook ([`docs/elevenlabs-agent.md`](docs/elevenlabs-agent.md)).
 
+**Stand van de demo:** de luisteraar schrijft het gesprek live uit, maar de backend verwerkt het nog als één geheel na afloop. Hoe het dashboard zich tijdens het gesprek bijwerkt, toont de demo met demodata (zie *Wat niet af is*).
+
 ## Het twijfelmoment dat we oplossen
 
 | Vraag uit de challenge | Hoe CallSight ze beantwoordt |
@@ -62,33 +64,48 @@ GCP_PROJECT=<project-id> ./infra/gcp_setup.sh        # Firestore, Cloud Run, sec
 GCP_PROJECT=<project-id> ./infra/firebase_setup.sh   # web-app, security rules, anonieme login; toont VITE_FIREBASE_*
 cp .env.example .env                                 # GCP_PROJECT en de ElevenLabs-waarden
 
-# 2. Backend: lokaal zonder GCP; deployen gaat via een push naar main (Cloud Build, docs/backend.md)
-cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev,local]"
-STORE_BACKEND=memory DEMO_MODE=true ELEVENLABS_WEBHOOK_SECRET=dev uvicorn app.main:app --reload --port 8080
-cd ..
+# 2. Backend op Cloud Run (Cloud Build bouwt de image met het lokale embeddingmodel erin)
+P=<project-id>
+gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.backend.yaml \
+  --service-account=projects/$P/serviceAccounts/callsight-deployer@$P.iam.gserviceaccount.com .
+API=$(gcloud run services describe callsight-backend --region=europe-west1 --format='value(status.url)')
+curl -s $API/health                                   # niet /healthz: Cloud Run reserveert paden op z
+python scripts/smoke_test.py --url $API               # 31 checks: gesprek -> Firestore -> score -> historie -> oplossen
+#    lokaal zonder GCP: python scripts/smoke_test.py   (in-process, memory store), of de API zelf:
+#    cd backend && pip install -e ".[dev,local]" && STORE_BACKEND=memory DEMO_MODE=true ELEVENLABS_WEBHOOK_SECRET=dev uvicorn app.main:app --port 8080
 
 # 3. Fictieve dataset, via de backend-pipeline (zelfde ID's en embeddings als live calls)
 export EMBEDDING_PROVIDER=local EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 EMBEDDING_DIM=384
 python scripts/seed.py --check                       # valideren zonder GCP
 python scripts/seed.py --reset --yes                 # Firestore vullen; toont de scores van de drie demo-scenario's
 
-# 4. Dashboard: http://localhost:5173, of zonder backend http://localhost:5173/?bron=demo
-cd frontend && npm install && cp .env.example .env.local && npm run dev
+# 4. Dashboard op Cloud Run (VITE_* worden bij de build ingebakken)
+#    Firebase web-config uit stap 1 (firebase_setup.sh); die is publiek, toegang loopt via de Firestore rules
+gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.frontend.yaml \
+  --service-account=projects/$P/serviceAccounts/callsight-deployer@$P.iam.gserviceaccount.com \
+  --substitutions="^@^_API_BASE=$API@_DATA_SOURCE=firestore@_FIREBASE_API_KEY=<apiKey>@_FIREBASE_APP_ID=<appId>" .
+UI=$(gcloud run services describe callsight-dashboard --region=europe-west1 --format='value(status.url)')
+gcloud run services update callsight-backend --region=europe-west1 \
+  --update-env-vars="^@^FRONTEND_ORIGIN=$UI,http://localhost:5173"   # CORS voor de schrijfacties van het dashboard
+#    lokaal: cd frontend && cp .env.example .env.local && npm install && npm run dev   (zonder backend: ?bron=demo)
 
-# 5. Meeluisteren: open daarna http://localhost:8600/ (ELEVENLABS_API_KEY in de omgeving, niet in de code)
+# 5. Meeluisteren, lokaal: open daarna http://localhost:8600/ (ELEVENLABS_API_KEY in de omgeving, niet in de code)
 pip install -r scripts/requirements.txt
 python scripts/segment_collector.py --port 8600 --forward-url http://localhost:8080/demo/simulate-call
+
+# 6. ElevenLabs-agent (tweede ingang): zie docs/elevenlabs-agent.md
 ```
 
-Tweede ingang en tests: de agentconfig staat in `docs/elevenlabs-agent.md` (`scripts/elevenlabs_setup.py`). Een ondertekende payload afspelen zonder gesprek: `python scripts/replay_webhook.py`. End-to-end: `python scripts/smoke_test.py`.
+De agentconfig van de tweede ingang maak je aan met `scripts/elevenlabs_setup.py`. Een ondertekende payload afspelen zonder gesprek: `python scripts/replay_webhook.py`.
 
 ## Wat niet af is
 
-- **Live-ingang in de backend.** De collector stuurt elke tussenstand naar `/demo/simulate-call`. Dat werkt alleen met `DEMO_MODE=true` en is dus bedoeld voor lokaal en de demo. In productie hoort hier een geauthenticeerde live-route of de HMAC-webhook, met `DEMO_MODE=false` op Cloud Run.
-- **Doorvragen ("Vraag nu").** Het dashboard toont en verwerkt ze al. De backend genereert ze nog niet: in de demo komen ze uit demodata. Vertex AI is in het hackathonproject geblokkeerd, en daarom herkent de collector de velden standaard met regels.
-- **Trust-signalen op het scherm.** Eigenaar, reviewdatum, land en tegenstrijdige versies staan per oplossing in Firestore, en de KBO-controle per bedrijf. Het dashboard toont ze nog niet.
+- **Live meeluisteren.** De luisteraar werkt (Scribe Realtime, `scripts/scribe_listen.py` en `scripts/segment_collector.py`, `docs/contract-live.md`), maar de backend verwerkt nog één payload per `conversation_id`. De live-ingang is de eerstvolgende stap: updates op dezelfde call, suggesties per zin herberekenen, doorvragen. De demo gebruikt de flow na afloop van het gesprek. De collector stuurt via `/demo/simulate-call`, dat alleen met `DEMO_MODE=true` werkt; in productie hoort hier een geauthenticeerde live-route of de HMAC-webhook.
+- **Doorvragen en veldherkenning met Gemini.** Niet mogelijk in de lab-omgeving, waar Vertex AI Gen AI door een org-policy op `denyAll` staat. Het dashboard toont de doorvragen al, met demodata. De collector herkent de velden standaard met regels, en de embeddings draaien lokaal (`EMBEDDING_PROVIDER=local`). Waar Vertex wel mag, volstaat `EMBEDDING_PROVIDER=vertex`.
+- **Trust-signalen op het scherm.** Eigenaar, reviewdatum, land en tegenstrijdige versies staan per oplossing in Firestore, net als de KBO-controle per bedrijf. Het dashboard toont ze nog niet.
 - **Escalatiedrempel.** De backend gebruikt 80 (gekalibreerd). Het dashboard heeft nog een eigen drempel van 50 (`frontend/src/types.ts`); die twee moeten gelijk getrokken worden.
-- **Spraak en telefonie.** Consultant en beller delen één microfoon. Telefonie (Twilio/SIP) is niet gekoppeld.
+- **Tijdelijke omgeving.** De demo draaide in een Qwiklabs-project dat verdwijnt als het lab afloopt. Daarna werken de live-URL's niet meer; stap 1 tot 4 hierboven bouwen alles opnieuw op in een eigen project.
+- **Spraak en telefonie.** Consultant en beller delen één microfoon, en de demo gebruikt een browsergesprek. Telefonie (Twilio/SIP) is niet gekoppeld.
 - **Herkomst van de gegevens.** Trust-signalen en KBO-treffers komen uit de seed. In productie komen ze uit het documentbeheer van SD Worx en uit een live KBO-opzoeking.
 - **Login.** Voor de demo is dat een anonieme login. Productie vraagt SSO met rollen.
 
