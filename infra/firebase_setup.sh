@@ -57,7 +57,5 @@ say "Klaar"
 cat <<EOF
 Nog te doen:
   1. De VITE_FIREBASE_*-regels hierboven in frontend/.env.local zetten (C), met VITE_FIREBASE_ANON_AUTH=true.
-  2. Dashboard publiceren (na C's build):
-       cd frontend && npm run build && cd .. && firebase deploy --only hosting --project ${GCP_PROJECT} --config firebase.json
-     en https://${GCP_PROJECT}.web.app in de trigger-substitutie _FRONTEND_ORIGIN van de backend zetten (docs/backend.md).
+  2. Dashboard op Cloud Run zetten met de VITE_FIREBASE_*-waarden van hierboven: README.md, Draaien, stap 4.
 EOF
