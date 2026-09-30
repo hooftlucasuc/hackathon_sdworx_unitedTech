@@ -14,7 +14,7 @@ substitutions:
   _EMBEDDING_PROVIDER: local
   _EMBEDDING_MODEL: sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
   _EMBEDDING_DIM: "384"
-  _ESCALATION_THRESHOLD: "60"
+  _ESCALATION_THRESHOLD: "80"
   _MEMORY: 2Gi
   _CPU: "2"
 

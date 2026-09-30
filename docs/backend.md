@@ -112,7 +112,7 @@ Verwacht: `created: true`, `suggestions: 5`, en bovenaan de vakantiegeld-oplossi
 
   Run daarna de trigger opnieuw, zodat een nieuwe revisie het secret oppikt.
 - **Aan C:** `VITE_API_URL=$URL`. Staat het dashboard later op een andere origin, zet die in de trigger-substitutie `_FRONTEND_ORIGIN`, komma-gescheiden met `http://localhost:5173`.
-- **Aan D:** seed-data laadt via `load-solutions` en `load-calls`, zie stap 2. Zo gebruiken seed en backend gegarandeerd dezelfde ID's, hetzelfde embedding-model en dezelfde task types. De escalatiedrempel stel je bij met de trigger-substitutie `_ESCALATION_THRESHOLD`, standaard 60.
+- **Aan D:** seed-data laadt via `load-solutions` en `load-calls`, zie stap 2. Zo gebruiken seed en backend gegarandeerd dezelfde ID's, hetzelfde embedding-model en dezelfde task types. De escalatiedrempel stel je bij met de trigger-substitutie `_ESCALATION_THRESHOLD`, standaard 80.
 
 ## Vertex geblokkeerd? Lokale embeddings
 
