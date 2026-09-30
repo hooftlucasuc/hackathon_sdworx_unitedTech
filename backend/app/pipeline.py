@@ -277,7 +277,8 @@ def rescore_call(store, call_id: str, now: Optional[datetime] = None, threshold:
     now = now or datetime.now(timezone.utc)
     vector = store.get_call_embedding(call_id)
     if vector is None:
-        raise LookupError(f"call {call_id} not found or has no embedding")
+        # Geen "call {id}"-opbouw: Aikido's SAST las dat als een SQL CALL-statement (vals alarm; er is geen SQL).
+        raise LookupError(f"no stored embedding for call id {call_id!r}")
     suggestions = suggest(store, vector, now)
     store.update_suggestions(call_id, suggestions, "ok", needs_escalation(suggestions, threshold))
     return suggestions
