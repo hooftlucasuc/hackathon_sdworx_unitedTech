@@ -9,9 +9,14 @@ owner_expert, last_reviewed_at, conflicts_with), sector/size/country op companie
 
 Gebruik (backend-venv actief, vanuit de repo-root):
   python scripts/seed.py --check          # alleen valideren, geen GCP
-  python scripts/seed.py --offline        # volledige run in geheugen met de hash-embedder, geen GCP
-  python scripts/seed.py --reset --yes    # Firestore wissen en opnieuw vullen (Vertex-embeddings)
+  python scripts/seed.py --offline        # volledige run in geheugen, geen GCP (hash-embedder, of het
+                                          # lokale model als EMBEDDING_PROVIDER=local: dan kloppen de scores)
+  python scripts/seed.py --reset --yes    # Firestore wissen en opnieuw vullen
   python scripts/seed.py --probe          # alleen de demo-scenario's scoren tegen de huidige kennisbank
+
+Gebruik altijd dezelfde EMBEDDING_PROVIDER, EMBEDDING_MODEL en EMBEDDING_DIM als de backend op Cloud Run
+(nu: local, sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2, 384; zie docs/backend.md),
+anders zijn de similarities betekenisloos.
 """
 
 from __future__ import annotations
@@ -247,6 +252,11 @@ def main() -> int:
     if args.offline:
         settings = settings.model_copy(update={"store_backend": "memory"})
     store, embedder = make_store(settings), make_embedder(settings)
+    if args.offline and settings.embedding_provider == "local":
+        # zelfde model als de backend op Cloud Run, maar zonder GCP: bruikbaar om de drempel te kalibreren
+        from app.embeddings import LocalEmbedder
+
+        embedder = LocalEmbedder(settings.embedding_model, settings.embedding_dim)
     now = datetime.now(timezone.utc)
 
     if args.probe and not args.offline:

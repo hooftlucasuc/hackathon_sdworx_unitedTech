@@ -22,7 +22,7 @@ Elke afgehandelde call ("werkte" / "werkte niet") past de succesratio aan: de ke
 
 ```
 telefoon / browser ─► ElevenLabs-agent ─► post-call webhook (HMAC) ─► Cloud Run (FastAPI) ─► Firestore (europe-west1)
-                                                                          │ Vertex AI embeddings          │
+                                                                          │ embeddings (lokaal model)     │
                                                                           ▼ + vector search + score       ▼
                                                                                           Dashboard (React, realtime, login)
 ```
@@ -36,12 +36,14 @@ Vereisten: `gcloud`, `firebase` CLI, Python 3.11+, Node 20+, een ElevenLabs-acco
 ```bash
 # 1. Google Cloud en Firebase (eenmalig)
 gcloud auth login && gcloud auth application-default login && firebase login
-GCP_PROJECT=<project-id> ./infra/gcp_setup.sh        # Firestore, Vertex, Cloud Run, secrets, indexen
+GCP_PROJECT=<project-id> ./infra/gcp_setup.sh        # Firestore, Cloud Run, secrets, indexen (rol B)
 GCP_PROJECT=<project-id> ./infra/firebase_setup.sh   # web-app, security rules; toont VITE_FIREBASE_*
 cp .env.example .env                                 # vul GCP_PROJECT en de ElevenLabs-waarden in
 
 # 2. Fictieve dataset (via de backend-pipeline, dus zelfde ID's en embeddings als live calls)
-cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]" && cd ..
+#    Zelfde embedding-instellingen als de backend op Cloud Run; nu lokaal, want Vertex Gen AI is in het project geblokkeerd:
+#    export EMBEDDING_PROVIDER=local EMBEDDING_MODEL=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2 EMBEDDING_DIM=384
+cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev,local]" && cd ..
 python scripts/seed.py --check                       # valideren zonder GCP
 python scripts/seed.py --reset --yes                 # Firestore vullen; toont ook de scores van de demo-scenario's
 
@@ -71,7 +73,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 
 - **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De kennisbank is een illustratie en geen juridisch advies.
 - **Wat we bewaren:** transcript en de geëxtraheerde velden (naam, bedrijf, probleem, categorie, urgentie). **Geen audio.** Namen en transcripten komen nooit in logregels.
-- **Waar:** Firestore, Vertex AI en Cloud Run draaien in `europe-west1`.
+- **Waar:** Firestore en Cloud Run draaien in `europe-west1`. De embeddings worden in de backend zelf berekend (lokaal meertalig model), dus probleemteksten gaan niet naar een extern AI-model.
 - **Toegang:** het dashboard leest alleen na Google-login én met een toegangsclaim die per teamlid wordt toegekend (Firestore security rules); de lijst van wie toegang heeft staat niet in de repo. Schrijven kan uitsluitend de backend. De webhook weigert verzoeken zonder geldige HMAC-signature.
 - **Open punten voor productie:**
   - De PoC draait op de standaard (VS) omgeving van ElevenLabs. Voor productie is een Enterprise-account met EU-residency plus Zero Retention Mode nodig, en dan nog moet per integratie worden nagegaan of er verwerking buiten de EU plaatsvindt: residency dekt de opslag, en de ElevenLabs-docs noemen post-call webhooks als uitzondering die tot verwerking buiten de regio kan leiden (zie `docs/elevenlabs-payload-check.md` §5). Daarnaast is een verwerkersovereenkomst nodig. De audio-webhook staat uit.

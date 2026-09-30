@@ -39,8 +39,8 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 **Beeld:** links het ElevenLabs-gesprek (golfvorm of browservenster), rechts het dashboard op `/live`. Ondertitels van het gesprek onderaan.
 
 **Gesprek (ingekort in de montage tot ±30 s):**
-- Agent, eerste zin (**laten staan**, is de AI Act-transparantie): *"Goeiedag, u spreekt met de digitale assistent van SD Worx. Ik ben een AI…"*
-- Lindsey (A): naam, bedrijf, vraag over vertrekvakantiegeld, "vrij dringend". Tekst in `demo-script.md`.
+- Agent, eerste zin (**laten staan**, is de AI Act-transparantie): *"Goeiedag, u spreekt met de automatische assistent van SD Worx. Ik neem uw vraag op zodat een collega u kan terugbellen. Waarmee kan ik u helpen?"* (uit `docs/elevenlabs-agent.md` §2)
+- Lindsey (gegenereerde stem, beurten L1 tot L4 in `demo-script.md`): naam, bedrijf en de vraag over vertrekvakantiegeld in één beurt, daarna "ja, dat klopt" en "liefst vandaag nog".
 - Agent vat samen en sluit af.
 
 **Beeld na ophangen:** het dashboard springt naar de nieuwe call. Wacht niet in stilte: knip naar het moment dat de call verschijnt, en toon de gemeten tijd in een klein label ("verschijnt na X s").
@@ -115,5 +115,4 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 - [ ] Gemeten tijd tussen ophangen en verschijnen op het dashboard (scène 3)
 - [ ] Werkelijke topscore van scenario a (nu 89 in het script, uit de kalibratie in `demo-script.md`)
 - [ ] Aantal Aikido-bevindingen voor en na (scène 6)
-- [ ] Eerste zin van de agent zoals A die heeft ingesteld (scène 3)
 - [ ] Wie spreekt de VO in, wie monteert

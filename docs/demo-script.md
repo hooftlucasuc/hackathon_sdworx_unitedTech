@@ -14,19 +14,18 @@ Alle personen zijn fictief, ook Lindsey. United Consulting is het enige bestaand
 
 **Wat de jury moet zien:** de beller wordt herkend, de historie en de openstaande cases staan er al, en de topoplossing toont *waarom* ze betrouwbaar is.
 
-Beller: Lindsey, met een gegenereerde stem. Elke beurt is een apart fragment (`python3 scripts/voiceover.py --caller`), dat de bediener afspeelt zodra de agent zwijgt. De volgorde van de agent kan afwijken: kies dan het fragment dat past.
+Beller: Lindsey, met een gegenereerde stem. Elke beurt is een apart fragment (`python3 scripts/voiceover.py --caller`), dat de bediener afspeelt zodra de agent zwijgt. De beurten volgen het verloop van de agent uit `docs/elevenlabs-agent.md` §3: eerst het probleem (naam en bedrijf geeft Lindsey meteen mee, dus die vraag slaat de agent over), dan een samenvatting, dan de urgentie, dan de afsluiting. Wijkt de agent af, kies dan het reservefragment dat past.
 
-> **L1 · na de begroeting:** Goeiemiddag, met Lindsey Tafels van United Consulting. Ik ben verantwoordelijk voor Comp & Ben.
-> **L2 · als de agent vraagt waarmee hij kan helpen:** Ik bel over het vakantiegeld van een consultant die vorige maand uit dienst is gegaan. Hij krijgt veel minder vertrekvakantiegeld dan hij verwachtte, en hij denkt dat het vakantiegeld van vorig jaar er niet in zit.
-> **L3 · als de agent het probleem samenvat:** Ja, dat klopt.
-> **L4 · als de agent vraagt hoe dringend het is:** Vrij dringend. Hij heeft al twee keer gebeld.
-> **L5 · bij de afsluiting:** Perfect, dank u wel. Tot horens.
+> **L1 · na de begroeting ("Waarmee kan ik u helpen?"):** Goeiemiddag, met Lindsey Tafels van United Consulting, ik ben verantwoordelijk voor Comp & Ben. Ik bel over het vakantiegeld van een consultant die vorige maand uit dienst is gegaan. Hij krijgt veel minder vertrekvakantiegeld dan hij verwachtte, en hij denkt dat het vakantiegeld van vorig jaar er niet in zit.
+> **L2 · na "Als ik het goed begrijp: … Klopt dat?":** Ja, dat klopt.
+> **L3 · na "Moet dit vandaag opgelost zijn, deze week, of kan het wachten?":** Liefst vandaag nog. Hij heeft al twee keer gebeld.
+> **L4 · bij de afsluiting:** Perfect, dank u wel. Tot horens.
 
-Reserve, alleen als de agent iets anders vraagt:
+Reserve, alleen als de agent iets anders doet:
 
-> **R1 · als de agent de naam niet goed verstond:** Lindsey Tafels. Tafels, zoals de meubels.
-> **R2 · als de agent het bedrijf niet goed verstond:** United Consulting, het consultancybedrijf.
-> **R3 · als de agent vraagt of er nog iets is:** Nee, dat was alles. Dank u.
+> **R1 · na "Met wie spreek ik, en voor welk bedrijf belt u?":** Met Lindsey Tafels, van United Consulting.
+> **R2 · als de agent de naam verkeerd herhaalt:** Nee, Lindsey Tafels. Tafels, zoals de meubels.
+> **R3 · als de samenvatting niet klopt:** Niet helemaal. Het vakantiegeld van vorig jaar ontbreekt in zijn vertrekvakantiegeld.
 > **R4 · als de agent iets onverwachts vraagt:** Sorry, kan u dat nog eens herhalen?
 
 Afspelen: open `media/vo/<engine>/lindsey.html` (knoppen per fragment) op een **tweede toestel** naast de micro van de laptop waarop het gesprek loopt. Speel je af op dezelfde laptop, dan kan de echo-onderdrukking van de browser de stem wegfilteren.
