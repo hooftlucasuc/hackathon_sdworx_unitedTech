@@ -1,7 +1,7 @@
 [
   {"name": "Bakkerij Verhulst BV", "sector": "voeding", "size": 45, "country": "BE"},
-  {"name": "Garage Van Damme NV", "sector": "automotive", "size": 60, "country": "BE"},
-  {"name": "Transport Maes BV", "sector": "logistiek", "size": 120, "country": "BE"},
+  {"name": "Garage Kempenpoort NV", "sector": "automotive", "size": 60, "country": "BE"},
+  {"name": "Transport Lindeveld BV", "sector": "logistiek", "size": 120, "country": "BE"},
   {"name": "Zorgcentrum De Linde vzw", "sector": "zorg", "size": 210, "country": "BE"},
   {"name": "Drukkerij Peeters & Zonen", "sector": "grafisch", "size": 30, "country": "BE"},
   {"name": "Brasserie De Vijf Wegen", "sector": "horeca", "size": 25, "country": "BE"},

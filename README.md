@@ -71,7 +71,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 
 ## Privacy en GDPR
 
-- **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De kennisbank is een illustratie en geen juridisch advies.
+- **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De fictieve bedrijfsnamen zijn gecontroleerd tegen de KBO Open Data (snapshot 29-09-2026): geen enkele bestaat als onderneming, zodat er geen verzonnen problemen aan een echt bedrijf hangen. De kennisbank is een illustratie en geen juridisch advies.
 - **Wat we bewaren:** transcript en de geëxtraheerde velden (naam, bedrijf, probleem, categorie, urgentie). **Geen audio.** Namen en transcripten komen nooit in logregels.
 - **Waar:** Firestore en Cloud Run draaien in `europe-west1`. De embeddings worden in de backend zelf berekend (lokaal meertalig model), dus probleemteksten gaan niet naar een extern AI-model.
 - **Toegang:** het dashboard leest alleen na Google-login én met een toegangsclaim die per teamlid wordt toegekend (Firestore security rules); de lijst van wie toegang heeft staat niet in de repo. Schrijven kan uitsluitend de backend. De webhook weigert verzoeken zonder geldige HMAC-signature.
