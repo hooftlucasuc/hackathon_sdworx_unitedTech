@@ -1,0 +1,29 @@
+{
+  "type": "post_call_transcription",
+  "event_timestamp": 1790763600,
+  "data": {
+    "agent_id": "agent_demo",
+    "conversation_id": "conv_demo_maaltijdcheques_002",
+    "status": "done",
+    "transcript": [
+      {"role": "agent", "message": "Goedemiddag, u spreekt met de digitale assistent van SD Worx. Met wie spreek ik?", "time_in_call_secs": 0},
+      {"role": "user", "message": "Tom Peeters, van bakkerij Verhulst.", "time_in_call_secs": 3},
+      {"role": "agent", "message": "Dag meneer Peeters. Wat is uw vraag?", "time_in_call_secs": 6},
+      {"role": "user", "message": "Voor onze deeltijdse verkoopster zijn deze maand te veel maaltijdcheques besteld.", "time_in_call_secs": 9},
+      {"role": "agent", "message": "Begrepen: te veel maaltijdcheques voor een deeltijdse werknemer. Hoe dringend is dit?", "time_in_call_secs": 16},
+      {"role": "user", "message": "Niet zo dringend, voor de volgende bestelling.", "time_in_call_secs": 21}
+    ],
+    "metadata": {"start_time_unix_secs": 1790763600, "call_duration_secs": 28},
+    "analysis": {
+      "call_successful": "success",
+      "transcript_summary": "Tom Peeters van Bakkerij Verhulst meldt dat voor een deeltijdse werknemer te veel maaltijdcheques zijn besteld.",
+      "data_collection_results": {
+        "caller_name": {"data_collection_id": "caller_name", "value": "Tom Peeters"},
+        "company_name": {"data_collection_id": "company_name", "value": "bakkerij Verhulst"},
+        "problem": {"data_collection_id": "problem", "value": "Voor een deeltijdse werknemer zijn deze maand te veel maaltijdcheques besteld."},
+        "category": {"data_collection_id": "category", "value": "maaltijdcheques"},
+        "urgency": {"data_collection_id": "urgency", "value": "laag"}
+      }
+    }
+  }
+}

@@ -35,6 +35,7 @@ node_modules/
 frontend/dist/
 
 # editors / os
+.claude/settings.local.json
 .DS_Store
 .idea/
 .vscode/

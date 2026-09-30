@@ -1,15 +1,16 @@
 rules_version = '2';
-// Dashboard leest alleen, en alleen als ingelogde gebruiker (anoniem of Google).
-// Schrijven gebeurt uitsluitend door de backend via de server-SDK, die rules omzeilt.
+// Het dashboard leest alleen, en alleen voor teamleden met de custom claim agent == true
+// (toegekend met scripts/grant_access.py; de e-maillijst staat dus niet in de repo).
+// Schrijven gebeurt uitsluitend door de backend via de server-SDK, die de rules omzeilt.
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{collection}/{docId} {
-      allow read: if request.auth != null
-                  && collection in ['calls', 'callers', 'companies', 'solutions'];
-      allow write: if false;
+    function isAgent() {
+      return request.auth != null && request.auth.token.agent == true;
     }
-    match /{document=**} {
-      allow read, write: if false;
+
+    match /{collection}/{docId} {
+      allow read: if isAgent() && collection in ['calls', 'callers', 'companies', 'solutions'];
+      allow write: if false;
     }
   }
 }

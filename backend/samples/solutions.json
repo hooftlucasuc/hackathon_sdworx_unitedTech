@@ -1,0 +1,92 @@
+[
+  {
+    "solution_id": "vakantiegeld-uitdienst-bediende",
+    "title": "Uitdiensttredingsvakantiegeld bediende herberekenen",
+    "problem_text": "Het vakantiegeld van een bediende die uit dienst ging klopt niet. Het uitdiensttredingsvakantiegeld op de eindafrekening lijkt te laag of te hoog.",
+    "solution_text": "Controleer of het uitdiensttredingsvakantiegeld berekend is op de brutolonen van zowel het lopende als het vorige vakantiedienstjaar, inclusief variabel loon en premies. Controleer of reeds uitbetaald vakantiegeld correct in mindering is gebracht. Herbereken via een correctierun op de uitdienstloonrun en bezorg de werknemer een aangepast vakantieattest.",
+    "category": "vakantiegeld",
+    "times_used": 14,
+    "times_successful": 12,
+    "last_used_at": "2026-08-20T10:00:00Z"
+  },
+  {
+    "solution_id": "vakantiegeld-arbeider-vakantiekas",
+    "title": "Arbeider ontvangt vakantiegeld via de vakantiekas",
+    "problem_text": "Een arbeider vraagt waarom de werkgever geen dubbel vakantiegeld uitbetaalt en of er iets fout is in de loonverwerking.",
+    "solution_text": "Leg uit dat het vakantiegeld van arbeiders door de bevoegde vakantiekas wordt uitbetaald, niet door de werkgever. Controleer of de prestaties correct in de kwartaalaangifte staan, want de vakantiekas rekent op basis daarvan. Verwijs de werknemer naar de vakantiekas met zijn identificatienummer.",
+    "category": "vakantiegeld",
+    "times_used": 9,
+    "times_successful": 9,
+    "last_used_at": "2026-05-02T09:30:00Z"
+  },
+  {
+    "solution_id": "dimona-laattijdig",
+    "title": "Laattijdige Dimona-aangifte regulariseren",
+    "problem_text": "De Dimona-aangifte voor een nieuwe werknemer is te laat of niet ingediend. De werknemer is al begonnen.",
+    "solution_text": "Dien de Dimona-aangifte onmiddellijk alsnog in met de correcte begindatum. Noteer de oorzaak van de vertraging in het dossier. Wijs de klant op het sanctierisico en spreek een vaste stap af in de onboarding: aangifte uiterlijk op het moment dat de werknemer begint.",
+    "category": "dimona",
+    "times_used": 11,
+    "times_successful": 10,
+    "last_used_at": "2026-09-10T14:00:00Z"
+  },
+  {
+    "solution_id": "ziekte-gewaarborgd-loon-herval",
+    "title": "Gewaarborgd loon bij herval corrigeren",
+    "problem_text": "Het gewaarborgd loon bij ziekte is verkeerd berekend. De werknemer werd opnieuw ziek kort na werkhervatting.",
+    "solution_text": "Controleer of de nieuwe ziekteperiode binnen de hervalperiode valt. Dan is het een voortzetting en is er geen nieuw gewaarborgd loon verschuldigd voor de reeds betaalde periode. Pas de afwezigheidscodes aan en herbereken de betrokken maand.",
+    "category": "ziekte",
+    "times_used": 7,
+    "times_successful": 5,
+    "last_used_at": "2026-03-15T11:00:00Z"
+  },
+  {
+    "solution_id": "maaltijdcheques-deeltijds",
+    "title": "Aantal maaltijdcheques bij deeltijds werk",
+    "problem_text": "Het aantal maaltijdcheques klopt niet voor een deeltijdse werknemer. Er zijn te veel of te weinig cheques besteld.",
+    "solution_text": "Controleer welke berekeningsmethode in het dossier staat: per effectief gewerkte dag of volgens de urenformule. Controleer het uurrooster van de werknemer in het loonpakket. Corrigeer het verschil bij de volgende bestelling en documenteer de gekozen methode.",
+    "category": "maaltijdcheques",
+    "times_used": 16,
+    "times_successful": 13,
+    "last_used_at": "2026-09-01T08:45:00Z"
+  },
+  {
+    "solution_id": "bedrijfswagen-vaa-nieuwe-wagen",
+    "title": "Voordeel alle aard na nieuwe bedrijfswagen",
+    "problem_text": "Het voordeel alle aard voor de bedrijfswagen verandert niet op de loonfiche, hoewel de werknemer een nieuwe wagen heeft gekregen.",
+    "solution_text": "Werk de wagenfiche bij met de nieuwe catalogusprijs, CO2-uitstoot, brandstoftype en datum eerste inschrijving. Herbereken het voordeel alle aard vanaf de leveringsdatum en regulariseer de maanden sinds levering.",
+    "category": "bedrijfswagen",
+    "times_used": 6,
+    "times_successful": 6,
+    "last_used_at": "2025-11-20T15:00:00Z"
+  },
+  {
+    "solution_id": "ontslag-opzegtermijn-ancienniteit",
+    "title": "Opzegtermijn herberekenen op anciënniteit",
+    "problem_text": "De opzegtermijn bij ontslag lijkt verkeerd berekend. De klant twijfelt aan het aantal weken.",
+    "solution_text": "Controleer de datum van indiensttreding en eventuele voorafgaande contracten die meetellen voor de anciënniteit. Herbereken de opzegtermijn volgens de geldende regels en pas het ontslagdocument en het werkloosheidsformulier aan.",
+    "category": "ontslag",
+    "times_used": 5,
+    "times_successful": 3,
+    "last_used_at": "2025-06-10T10:00:00Z"
+  },
+  {
+    "solution_id": "loon-indexatie-paritair-comite",
+    "title": "Indexatie niet toegepast door verkeerd paritair comité",
+    "problem_text": "De loonindexatie is niet toegepast op het loon van de werknemers terwijl de sector wel geïndexeerd heeft.",
+    "solution_text": "Controleer het paritair comité in het werkgeversdossier en vergelijk met de activiteit van de klant. Corrigeer de PC-code als die fout is, pas de indexatie toe en regulariseer retroactief vanaf de indexatiedatum.",
+    "category": "loonberekening",
+    "times_used": 12,
+    "times_successful": 11,
+    "last_used_at": "2026-02-01T09:00:00Z"
+  },
+  {
+    "solution_id": "loon-bedrijfsvoorheffing-gezinstoestand",
+    "title": "Nettoloon lager door bedrijfsvoorheffing",
+    "problem_text": "Een werknemer klaagt dat zijn nettoloon lager is dan verwacht. Het brutoloon is niet veranderd.",
+    "solution_text": "Controleer de fiscale gegevens van de werknemer: burgerlijke staat, kinderen ten laste en eventuele wijzigingen die niet werden doorgegeven. Vraag een geactualiseerd fiscaal formulier op en herbereken de bedrijfsvoorheffing vanaf de volgende loonrun.",
+    "category": "loonberekening",
+    "times_used": 8,
+    "times_successful": 6,
+    "last_used_at": "2026-07-01T13:00:00Z"
+  }
+]

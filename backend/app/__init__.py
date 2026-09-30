@@ -1,1 +1,1 @@
-"""TrustCard backend. Layers: ingest → store → retrieve → trust → llm → api."""
+"""CallSight backend: ElevenLabs webhook -> Firestore -> scored solutions for the dashboard."""

@@ -35,14 +35,19 @@ Vereisten: `gcloud`, `firebase` CLI, Python 3.11+, Node 20+, een ElevenLabs-acco
 
 ```bash
 # 1. Google Cloud en Firebase (eenmalig)
-gcloud auth login && gcloud auth application-default login
-GCP_PROJECT=<project-id> ./infra/gcp_setup.sh
-cp .env.example .env            # vul GCP_PROJECT en de ElevenLabs-waarden in
+gcloud auth login && gcloud auth application-default login && firebase login
+GCP_PROJECT=<project-id> ./infra/gcp_setup.sh        # Firestore, Vertex, Cloud Run, secrets, indexen
+GCP_PROJECT=<project-id> ./infra/firebase_setup.sh   # web-app, security rules; toont VITE_FIREBASE_*
+cp .env.example .env                                 # vul GCP_PROJECT en de ElevenLabs-waarden in
 
-# 2. Fictieve dataset
-python3 -m venv .venv && source .venv/bin/activate
-pip install google-cloud-firestore google-cloud-aiplatform pydantic-settings
-python scripts/seed.py --reset
+# 2. Fictieve dataset (via de backend-pipeline, dus zelfde ID's en embeddings als live calls)
+cd backend && python -m venv .venv && source .venv/bin/activate && pip install -e ".[dev]" && cd ..
+python scripts/seed.py --check                       # valideren zonder GCP
+python scripts/seed.py --reset --yes                 # Firestore vullen; toont ook de scores van de demo-scenario's
+
+# 3. Toegang tot het dashboard: Google-login plus een toegangsclaim per teamlid
+pip install firebase-admin
+python scripts/grant_access.py grant <e-mail>
 
 # 3. Backend
 #    TODO rol B: commando's
@@ -67,7 +72,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 - **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De kennisbank is een illustratie en geen juridisch advies.
 - **Wat we bewaren:** transcript en de geëxtraheerde velden (naam, bedrijf, probleem, categorie, urgentie). **Geen audio.** Namen en transcripten komen nooit in logregels.
 - **Waar:** Firestore, Vertex AI en Cloud Run draaien in `europe-west1`.
-- **Toegang:** het dashboard leest alleen na login (Firestore security rules); schrijven kan uitsluitend de backend. De webhook weigert verzoeken zonder geldige HMAC-signature.
+- **Toegang:** het dashboard leest alleen na Google-login én met een toegangsclaim die per teamlid wordt toegekend (Firestore security rules); de lijst van wie toegang heeft staat niet in de repo. Schrijven kan uitsluitend de backend. De webhook weigert verzoeken zonder geldige HMAC-signature.
 - **Open punten voor productie:**
   - ElevenLabs verwerkt audio standaard buiten de EU. Productie vereist EU-dataresidency of een gelijkwaardige garantie, een verwerkersovereenkomst en uitgeschakelde audio-opslag bij ElevenLabs.
   - Bewaartermijn per veld (bijvoorbeeld transcript 90 dagen, geëxtraheerde velden zolang het klantdossier loopt) en een verwijderprocedure op verzoek.

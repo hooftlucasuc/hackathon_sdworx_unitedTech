@@ -1,37 +1,38 @@
-# Firestore-indexen
+# Firestore indexes (CallSight)
 
-`infra/gcp_setup.sh` maakt ze aan. Hier staan ze om met de hand opnieuw te draaien.
-Status: `gcloud firestore indexes composite list`.
+`infra/gcp_setup.sh` creates all of these. Listed here to re-run by hand. Dimension must equal
+`EMBEDDING_DIM` (768 for `gemini-embedding-001` with `output_dimensionality=768`).
 
-## Vector-index op `solutions` (vector search van rol B)
-
-Geen prefilter: een andere category wordt niet uitgesloten (TEAMPLAN §1.5).
-De dimensie moet gelijk zijn aan `EMBEDDING_DIM` (768 voor `gemini-embedding-001` met `output_dimensionality=768`).
+## Vector index on `solutions` (required: the backend's solution search)
 
 ```bash
 gcloud firestore indexes composite create --collection-group=solutions --query-scope=COLLECTION \
-  --field-config=vector-config='{"dimension":"768","flat":"{}"}',field-path=problem_embedding
+  --field-config=field-path=problem_embedding,vector-config='{"dimension":"768","flat":"{}"}'
 ```
 
-Query aan de kant van B: `find_nearest(vector_field="problem_embedding", distance_measure=COSINE, limit=20)`,
-daarna herrangschikken op de totaalscore en de top 5 bewaren.
+Without it, calls are still stored but `suggestions_status` is `search_error`. After the index is
+ready, recompute an affected call with `python -m app.cli rescore <call_id>`.
 
-## Historie-queries van het dashboard (rol C)
-
-`calls where caller_id == X orderBy started_at desc`:
+## Vector index on `calls` (reserved for "similar past calls")
 
 ```bash
 gcloud firestore indexes composite create --collection-group=calls --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=caller_id \
-  --field-config=order=DESCENDING,field-path=started_at
+  --field-config=field-path=problem_embedding,vector-config='{"dimension":"768","flat":"{}"}'
 ```
 
-`calls where company_id == X orderBy started_at desc`:
+## Composite indexes on `calls` (for the dashboard's realtime queries)
+
+The backend API sorts history in Python and does not need these. The dashboard's
+`where('caller_id','==',x).orderBy('started_at','desc')` with `onSnapshot` does.
 
 ```bash
-gcloud firestore indexes composite create --collection-group=calls --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=company_id \
-  --field-config=order=DESCENDING,field-path=started_at
+for f in caller_id company_id; do
+  gcloud firestore indexes composite create --collection-group=calls --query-scope=COLLECTION \
+    --field-config=order=ASCENDING,field-path=$f \
+    --field-config=order=DESCENDING,field-path=started_at
+done
 ```
 
-`calls orderBy started_at desc limit 1` (live-scherm) gebruikt de automatische single-field index.
+`orderBy('started_at','desc').limit(1)` on `calls` (the live screen) uses the automatic single-field index.
+
+Check status: `gcloud firestore indexes composite list`.

@@ -102,7 +102,7 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 
 ## Opname en montage
 
-- **Neem op in delen**, niet in één take: elke scène apart, zodat een mislukt gesprek niet alles kost. Tussen de takes: `python scripts/seed.py --reset`.
+- **Neem op in delen**, niet in één take: elke scène apart, zodat een mislukt gesprek niet alles kost. Tussen de takes: `python scripts/seed.py --reset --yes`.
 - **Back-up:** neem één volledige geslaagde run op zodra de integratietest lukt, ook als die nog niet mooi is.
 - **Scherm:** browser op 100% zoom, bladwijzerbalk verborgen, geen andere tabs, geen `.env` of terminal met secrets in beeld.
 - **Gesprekken inkorten:** laat de eerste zin van de agent (AI-melding) en de vraag van de beller staan, knip de rest of versnel.

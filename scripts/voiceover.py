@@ -94,10 +94,7 @@ def parse_narrator(markdown: str) -> list[Clip]:
             in_vo = True
         elif in_vo and line.startswith(">"):
             buffer.append(line.lstrip("> ").strip())
-        elif in_vo and not line.strip() and buffer:
-            flush()
-            in_vo = False
-        elif line.startswith("**") or line.startswith("## "):
+        elif (in_vo and not line.strip() and buffer) or line.startswith(("**", "## ")):
             flush()
             in_vo = False
     flush()
@@ -166,7 +163,7 @@ def transcribe(path: Path, key: str, model: str) -> str:
 
 
 def duration(path: Path) -> float:
-    info = subprocess.run(["afinfo", str(path)], capture_output=True, text=True).stdout
+    info = subprocess.run(["afinfo", str(path)], capture_output=True, text=True, check=False).stdout
     match = re.search(r"estimated duration: ([\d.]+)", info)
     return float(match.group(1)) if match else 0.0
 

@@ -5,7 +5,7 @@ Alle personen zijn fictief, ook Lindsey. United Consulting is het enige bestaand
 
 ## Voorbereiding (voor elke take)
 
-1. `cd callsight && python scripts/seed.py --reset` (zet historie en tellers terug naar de beginstand).
+1. `python scripts/seed.py --reset --yes` (zet historie en tellers terug naar de beginstand; wist ook alle testcalls, dus niet tijdens een test van een teamgenoot).
 2. Dashboard open op `/live`, browser op 100% zoom, geen andere tabbladen zichtbaar.
 3. ElevenLabs-testgesprek klaar in een tweede venster. Lindsey (scenario a) is een gegenereerde stem, b en c spreekt A zelf in. Naam en bedrijf moeten **exact** zo in het transcript komen als hieronder: de herkenning van de beller hangt ervan af. Controleer dat na de eerste proefcall in het transcript op het ElevenLabs-dashboard.
 4. Plan B: lukt een gesprek niet, gebruik de knop "Simuleer gesprek" (payloads in `samples/`) en zeg dat eerlijk in de voice-over.
@@ -83,4 +83,5 @@ Verwacht op het dashboard:
 | b | > 75 | | | |
 | c | onder de escalatiedrempel | | | |
 
-Haalt c de drempel niet, pas de drempel aan op de **hoogste similarity** (niet op de totaalscore) en meld het aan B en C.
+De gemeten waarden komen uit `python scripts/seed.py --probe`: dat scoort de drie scenario's tegen de kennisbank zonder iets te schrijven.
+De backend escaleert als de beste score onder `ESCALATION_THRESHOLD` ligt (standaard 60, via de trigger-substitutie `_ESCALATION_THRESHOLD`). Haalt c die drempel niet, verhoog hem dan tot net boven de topscore van c en onder die van b, en meld het aan B en C.

@@ -1,0 +1,54 @@
+# Cloud Build: build backend/ image, push to Artifact Registry, deploy to Cloud Run (europe-west1).
+# Used by the GitHub trigger (see docs/backend.md). Manual run from the repo root:
+#   gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.backend.yaml \
+#     --service-account=projects/$GCP_PROJECT/serviceAccounts/callsight-deployer@$GCP_PROJECT.iam.gserviceaccount.com .
+substitutions:
+  _REGION: europe-west1
+  _SERVICE: callsight-backend
+  _AR_REPO: callsight
+  _RUNTIME_SA: callsight-backend
+  _FRONTEND_ORIGIN: http://localhost:5173
+  _DEMO_MODE: "true"
+  _EMBEDDING_MODEL: gemini-embedding-001
+  _EMBEDDING_DIM: "768"
+  _ESCALATION_THRESHOLD: "60"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:latest
+      - backend
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: [push, --all-tags, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}"]
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+      - --region=${_REGION}
+      - --service-account=${_RUNTIME_SA}@$PROJECT_ID.iam.gserviceaccount.com
+      - --allow-unauthenticated
+      - --min-instances=0
+      - --max-instances=3
+      - --memory=512Mi
+      - --cpu=1
+      - --timeout=60
+      - --set-env-vars=^@^GCP_PROJECT=$PROJECT_ID@GCP_REGION=${_REGION}@FRONTEND_ORIGIN=${_FRONTEND_ORIGIN}@DEMO_MODE=${_DEMO_MODE}@EMBEDDING_MODEL=${_EMBEDDING_MODEL}@EMBEDDING_DIM=${_EMBEDDING_DIM}@ESCALATION_THRESHOLD=${_ESCALATION_THRESHOLD}
+      - --set-secrets=ELEVENLABS_WEBHOOK_SECRET=elevenlabs-webhook-secret:latest
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID

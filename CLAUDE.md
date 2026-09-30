@@ -22,9 +22,10 @@ Secrets: via omgevingsvariabelen lokaal, Secret Manager op Cloud Run, nooit in d
 ## Structuur
 - `CONTEXT.md` — zelfstandig contextbestand voor teammates in Claude Code of Cursor. Eerst lezen.
 - `TEAMPLAN.md` — het contract (§1), tijdlijn en prompts per teammate.
-- `backend/` — FastAPI-app (rol B). Bevat nog restanten van het vorige TrustCard-plan, zie `TEAMPLAN.md` §5.
+- `backend/app/` — FastAPI-app (rol B): `webhook.py`, `api.py`, `pipeline.py` (parsing, ids, suggesties), `scoring.py`, `store.py` (enige plek met Firestore-calls), `embeddings.py`, `cli.py`.
+- `backend/samples/` — fictieve oplossingen en drie ElevenLabs-voorbeeldpayloads.
 - `frontend/` — dashboard (rol C).
-- `infra/` — `gcp_setup.sh`, Firestore-indexen, Cloud Run deploy.
+- `infra/` — `gcp_setup.sh` (GCP, rol B), `firebase_setup.sh` en `firestore.rules` (dashboard-toegang, rol D), `cloudbuild.backend.yaml` (GitHub-trigger → Cloud Run), Firestore-indexen.
 - `data/seed/` + `scripts/` — fictieve dataset en seed/replay-scripts (rollen A en D).
 - `docs/` — ElevenLabs-agentconfig, demo-script, integratielog, Aikido-screenshots.
 - `countries/`, `BUILD_SPEC.md` — vorig plan; verwijderen bij de feature freeze.
@@ -39,18 +40,25 @@ Secrets: via omgevingsvariabelen lokaal, Secret Manager op Cloud Run, nooit in d
 ```
 installeren:  cd backend && python -m venv .venv && . .venv/bin/activate && pip install -e ".[dev]"
               cd frontend && npm install
-draaien:      cd backend && uvicorn app.main:app --reload   |   cd frontend && npm run dev
-seed:         python scripts/seed.py --reset
-testen:       cd backend && pytest
+draaien:      cd backend && STORE_BACKEND=memory DEMO_MODE=true ELEVENLABS_WEBHOOK_SECRET=dev uvicorn app.main:app --reload --port 8080
+              cd frontend && npm run dev
+seed:         python scripts/seed.py --reset --yes     (demo-dataset uit data/seed/, via de backend-pipeline)
+              cd backend && python -m app.cli load-solutions samples/solutions.json   (alleen B's voorbeeldoplossingen)
+testen:       cd backend && pytest && ruff check app tests
+deployen:     push naar main (Cloud Build-trigger), zie docs/backend.md
 ```
 
 ## Verwijzingen
 - `TEAMPLAN.md` — contract, tijdlijn, prompts; open bij elke wijziging aan datamodel of API.
-- `docs/demo-script.md` — de drie demo-scenario's (rol D).
+- `docs/backend.md` — open bij deployen, GitHub koppelen, secrets wisselen of een deployfout.
+- `docs/demo-script.md` — de drie demo-scenario's en Lindsey's beurten (rol D).
+- `docs/video-script.md` — scènes, timing en voice-over van de video (rol D).
 
 ## Wijzigingslog
 | Datum | Wat veranderde | Gevolg voor architectuur of security |
 |---|---|---|
 | 2026-09-30 | Start als TrustCard (kennis-trust-score); country-profielen, core-, store- en ingest-laag geschreven | Gevoeligheid 5 door API-keys; secrets via env |
 | 2026-09-30 | Pivot naar CallSight: ElevenLabs-gesprek → GCP → dashboard; `TEAMPLAN.md` met contract en prompts | Gevoeligheid blijft 4/5 maar nu door persoonsgegevens uit gesprekken: GDPR-sectie verplicht in README, geen audio-opslag, EU-residency van ElevenLabs is een open punt |
+| 2026-09-30 | Backend rol B gebouwd: webhook met HMAC, Firestore-transacties, Vertex-embeddings via google-genai, score, alle routes, Cloud Build-deploy vanaf GitHub; TrustCard-modules uit `backend/` verwijderd | Twee service accounts met minimale rollen (runtime en deployer); webhook-secret in Secret Manager, fail closed zonder secret; geen audio of namen in logs; Cloud Run publiek voor de webhook, optionele `API_KEY` voor de overige routes |
+| 2026-09-30 | Gedeelde taken toegevoegd (`TEAMPLAN.md` §6); backend kreeg `escalate`-vlag met `ESCALATION_THRESHOLD` en `load-calls` voor historische seed-calls | Open securitypunt: Firestore rules en Firebase Auth voor het dashboard, anders zijn calls met persoonsgegevens publiek leesbaar |
 | 2026-09-30 | Seed-data met trust-signalen (land, eigenaar, reviewdatum, conflicten); United Consulting als klant met fictieve contactpersoon Lindsey Tafels | Eén bestaand bedrijf in een publieke repo: alleen verzonnen cases, geen echte payrollgegevens |
