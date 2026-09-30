@@ -76,8 +76,26 @@ open punt van dit ontwerp**, en het is een gesprek met hun telco, niet met Eleve
 
 ## Extractie
 
-Scribe levert tekst en verder niets — data collection is een Agents-functie en bestaat
-hier niet. De vijf velden moeten wij eruit halen. `segment_collector.py` heeft daarvoor
+Scribe levert geen data collection zoals de Agents-laag dat doet, maar het levert wel
+méér dan tekst: met `entity_detection` herkent het model zelf entiteiten in elk vastgezet
+segment, en dat komt terug in een apart `committed_transcript_entities`-event. Wij vragen
+`name`, `name_family` en `organization`, en dat dekt onze twee lastigste velden:
+
+```
+"Goeiedag, met Sofie Janssens van Bakkerij Verhulst BV."
+  name          -> Sofie Janssens
+  name_family   -> Janssens
+  organization  -> Bakkerij Verhulst BV.
+```
+
+Dat is een model, geen regex, en het werkt ook bij een beller die zich niet netjes
+voorstelt. **Voor beller en bedrijf hebben we dus geen taalmodel nodig**, en dat is maar
+goed ook, want Vertex ligt dicht op dit project. De regex blijft staan als vangnet voor
+als er niets herkend wordt. Categorie en urgentie komen nog steeds uit trefwoorden.
+
+Het entiteiten-event komt vlak ná het `committed_transcript` met dezelfde tekst. De
+luisteraar stuurt dat als een tweede bericht door; de verzamelaar ziet dezelfde tekst van
+dezelfde spreker en vult de beurt aan in plaats van er een tweede bij te zetten. De vijf velden moeten wij eruit halen. `segment_collector.py` heeft daarvoor
 twee smaken:
 
 - `--extractor gemini` — de echte. Dezelfde velddefinities als in

@@ -86,6 +86,8 @@ const WS_BASE = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
 const KEYTERMS = ["SD Worx","vakantiegeld","vertrekvakantiegeld","Dimona","DmfA","maaltijdcheques",
   "ecocheques","RSZ","bedrijfsvoorheffing","paritair comite","C4","opzegtermijn",
   "voordeel alle aard","gewaarborgd loon","loonrun"];
+// Scribe herkent naam en bedrijf zelf; dat is betrouwbaarder dan een regex.
+const ENTITY_TYPES = ["name","name_family","organization"];
 const TARGET_RATE = 16000;
 
 const $ = (id) => document.getElementById(id);
@@ -112,6 +114,7 @@ function buildUrl(token) {
     token: token,
   });
   KEYTERMS.forEach(t => p.append("keyterms", t));
+  ENTITY_TYPES.forEach(t => p.append("entity_detection", t));
   return WS_BASE + "?" + p.toString();
 }
 
@@ -196,6 +199,16 @@ async function connect(callId, speaker) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ call_id: callId, speaker: speaker, text: text })
       }).then(refreshFields);
+    } else if (msg.message_type === "committed_transcript_entities") {
+      const entities = msg.entities || [];
+      const text = (msg.text || "").trim();
+      if (entities.length && text) {
+        fetch("/segment", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ call_id: callId, speaker: speaker, text: text, entities: entities })
+        }).then(refreshFields);
+      }
     } else if (["error","auth_error","quota_exceeded"].includes(msg.message_type)) {
       setStatus(msg.message_type);
     }

@@ -70,7 +70,7 @@ def load_env(path: Path) -> None:
 # --------------------------------------------------------------------------- extractie
 
 
-def extract_rules(transcript: str) -> Dict[str, Optional[str]]:
+def extract_rules(transcript: str, entities: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Optional[str]]:
     """Deterministische extractie. Geen model, geen credentials, geen verrassingen.
 
     Bedoeld als vangnet: het haalt de gevallen eruit waarin de beller zich normaal
@@ -78,6 +78,18 @@ def extract_rules(transcript: str) -> Dict[str, Optional[str]]:
     eerlijker dan raden.
     """
     lowered = transcript.lower()
+
+    # Scribe levert naam en bedrijf zelf, herkend door het model. Dat gaat voor op de
+    # regex hieronder, die alleen nog het vangnet is voor als er niets herkend werd.
+    uit_model: Dict[str, Optional[str]] = {}
+    for entity in entities or []:
+        soort, tekst = entity.get("entity_type"), (entity.get("text") or "").strip(" .,")
+        if not tekst:
+            continue
+        if soort == "name" and "caller_name" not in uit_model:
+            uit_model["caller_name"] = tekst
+        elif soort == "organization" and "company_name" not in uit_model:
+            uit_model["company_name"] = tekst
 
     # Per zin zoeken, nooit over de hele transcript: anders loopt "van <Bedrijf>."
     # door tot in de volgende zin en wordt het bedrijf "Bakkerij Verhulst BV. Een".
@@ -130,15 +142,15 @@ def extract_rules(transcript: str) -> Dict[str, Optional[str]]:
         problem = max(sentences, key=len)
 
     return {
-        "caller_name": name,
-        "company_name": company,
+        "caller_name": uit_model.get("caller_name") or name,
+        "company_name": uit_model.get("company_name") or company,
         "problem": (problem or "")[:MAX_PROBLEM_CHARS] or None,
         "category": category,
         "urgency": urgency,
     }
 
 
-def extract_gemini(transcript: str) -> Dict[str, Optional[str]]:
+def extract_gemini(transcript: str, entities: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Optional[str]]:
     """De echte extractie. Vereist GCP_PROJECT en application default credentials.
 
     De beschrijvingen zijn dezelfde als die van de data-collection velden in
@@ -202,6 +214,7 @@ class Call:
         self.started_at = int(time.time())
         self.segments: List[Dict[str, str]] = []
         self.fields: Dict[str, Optional[str]] = {}
+        self.entities: List[Dict[str, Any]] = []
         self.updates = 0
 
     def transcript_text(self, speaker: Optional[str] = "beller") -> str:
@@ -250,13 +263,24 @@ class Collector:
         self.calls: Dict[str, Call] = {}
         self.lock = threading.Lock()
 
-    def add_segment(self, call_id: str, speaker: str, text: str) -> Dict[str, Any]:
+    def add_segment(
+        self, call_id: str, speaker: str, text: str, entities: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
         with self.lock:
             call = self.calls.setdefault(call_id, Call(call_id))
-            call.segments.append({"speaker": speaker, "text": text, "at": int(time.time())})
+            # De entiteiten komen in een eigen event, vlak na dezelfde tekst. Die beurt
+            # staat er dan al: aanvullen, niet nog een keer toevoegen.
+            laatste = call.segments[-1] if call.segments else None
+            if laatste and laatste["speaker"] == speaker and laatste["text"] == text:
+                if not entities:
+                    return {"call_id": call_id, "duplicate": True}
+            else:
+                call.segments.append({"speaker": speaker, "text": text, "at": int(time.time())})
+            if entities and speaker == "beller":
+                call.entities.extend(entities)
             before = dict(call.fields)
             try:
-                call.fields = self.extract(call.transcript_text("beller"))
+                call.fields = self.extract(call.transcript_text("beller"), call.entities)
             except Exception as exc:  # noqa: BLE001 - extractie mag het luisteren niet breken
                 log.error("extractie mislukt: %s", exc)
                 return {"call_id": call_id, "error": "extraction failed"}
@@ -308,13 +332,14 @@ def make_handler(collector: Collector):
                 call_id = str(payload["call_id"])
                 speaker = str(payload.get("speaker", "beller"))
                 text = str(payload["text"]).strip()
+                entities = payload.get("entities") or None
             except (ValueError, KeyError) as exc:
                 self._send(400, {"error": f"bad body: {exc}"})
                 return
             if not text:
                 self._send(200, {"ignored": "empty"})
                 return
-            self._send(200, collector.add_segment(call_id, speaker, text))
+            self._send(200, collector.add_segment(call_id, speaker, text, entities))
 
         def do_GET(self) -> None:  # noqa: N802
             path = self.path.split("?", 1)[0].rstrip("/")

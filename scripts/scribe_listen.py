@@ -40,6 +40,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_WS = "wss://api.elevenlabs.io/v1/speech-to-text/realtime"
 SAMPLE_WIDTH = 2  # 16-bit
 MAX_KEYTERM_CHARS = 20  # limiet van Scribe v2 Realtime; batch mag 50
+# Scribe herkent deze zelf, zonder taalmodel. Dat levert de beller en het bedrijf
+# betrouwbaarder op dan een regex, en het werkt ook als iemand zich niet netjes voorstelt.
+ENTITY_TYPES = ["name", "name_family", "organization"]
 
 # Zelfde lijst als de ASR-keywords van de agentconfig: zonder boost komen Dimona,
 # DmfA en C4 er verminkt uit, en dan mist de extractie de categorie.
@@ -86,13 +89,17 @@ def build_url(base: str, language: str, sample_rate: int, use_keyterms: bool) ->
         # string is één term van meer dan 20 tekens, en dan sluit de server de
         # WebSocket met een kaal 1008 invalid_request zonder verdere uitleg.
         params += [("keyterms", term) for term in KEYTERMS if len(term) <= MAX_KEYTERM_CHARS]
+    params += [("entity_detection", kind) for kind in ENTITY_TYPES]
     return f"{base}?{urllib.parse.urlencode(params)}"
 
 
-def push_segment(url: str, call_id: str, speaker: str, text: str) -> None:
+def push_segment(url: str, call_id: str, speaker: str, text: str, entities: Optional[list] = None) -> None:
     """Stuurt één vastgezet segment naar de verzamelaar. Faalt nooit hard: de luisteraar
     moet blijven luisteren, ook als de backend even weg is."""
-    body = json.dumps({"call_id": call_id, "speaker": speaker, "text": text}).encode("utf-8")
+    payload = {"call_id": call_id, "speaker": speaker, "text": text}
+    if entities:
+        payload["entities"] = entities
+    body = json.dumps(payload).encode("utf-8")
     request = urllib.request.Request(url, data=body, method="POST")
     request.add_header("Content-Type", "application/json")
     try:
@@ -141,6 +148,17 @@ async def listen(
                     print(f"\r[{elapsed:5.1f}s] {speaker}: {text}")
                     if push_url:
                         await asyncio.to_thread(push_segment, push_url, call_id, speaker, text)
+                elif kind == "committed_transcript_entities":
+                    # Eigen event, net na committed_transcript. We sturen het los na;
+                    # de verzamelaar herkent dezelfde tekst en vult de entiteiten aan
+                    # in plaats van er een beurt bij te zetten.
+                    entities = event.get("entities") or []
+                    text = (event.get("text") or "").strip()
+                    if entities and text:
+                        soorten = ", ".join(sorted({e.get("entity_type", "?") for e in entities}))
+                        log.info("entiteiten: %s", soorten)
+                        if push_url:
+                            await asyncio.to_thread(push_segment, push_url, call_id, speaker, text, entities)
                 elif kind in {"error", "auth_error", "quota_exceeded"}:
                     log.error("%s: %s", kind, event)
                     return
