@@ -5,7 +5,7 @@ interface Props {
   children: ReactNode;
 }
 
-/** Vangt een fout in één onderdeel op, zodat de rest van het scherm blijft staan. */
+/** Catches an error in one part, so the rest of the screen keeps working. */
 export class ErrorBoundary extends Component<Props, { failed: boolean }> {
   state = { failed: false };
 
@@ -14,19 +14,19 @@ export class ErrorBoundary extends Component<Props, { failed: boolean }> {
   }
 
   componentDidCatch(error: Error) {
-    // Alleen de foutmelding, nooit de data die het onderdeel toonde.
-    console.warn(`[callsight] onderdeel "${this.props.label}" faalde: ${error.message}`);
+    // Only the error message, never the data the part was showing.
+    console.warn(`[callsight] part "${this.props.label}" failed: ${error.message}`);
   }
 
   render() {
     if (!this.state.failed) return this.props.children;
     return (
-      <section className="panel failed" role="alert">
+      <section className="failed" role="alert">
         <p>
-          <strong>{this.props.label}</strong> kon niet getoond worden.
+          <strong>{this.props.label}</strong> could not be displayed.
         </p>
         <button className="btn" onClick={() => this.setState({ failed: false })}>
-          Opnieuw proberen
+          Try again
         </button>
       </section>
     );

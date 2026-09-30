@@ -1,52 +1,68 @@
 import { useRef, useState } from 'react';
 import { resolveQuestions, type QuestionItem } from '../answers';
-import type { Call } from '../types';
+import type { Call, NextQuestion } from '../types';
 
 const isCaller = (role: string) => !['medewerker', 'agent', 'employee'].includes(role);
 
-/** Doorvragen tijdens een live gesprek. Alleen een voorstel: de consultant beslist wat hij vraagt. */
-export function NextQuestions({ call }: { call: Call }) {
-  if (call.status !== 'live') return null;
-  return <LiveQuestions call={call} />;
+export interface QuestionState {
+  /** B's current set; undefined = not computed yet, [] = nothing left to ask. */
+  questions: NextQuestion[] | undefined;
+  open: QuestionItem[];
+  answered: QuestionItem[];
+  pick: (question: string, label: string) => void;
 }
 
-function LiveQuestions({ call }: { call: Call }) {
+/** Which of B's questions have been answered so far, recognised live or clicked by the consultant. */
+export function useQuestions(call: Call): QuestionState {
   const questions = call.next_questions;
   const setKey = (questions ?? []).map((q) => q.question).join('|');
 
-  // Een antwoord telt pas als het ná de vraag komt: onthoud waar het transcript stond toen deze vragen binnenkwamen.
+  // An answer only counts if it comes after the question: remember where the transcript was when these questions arrived.
   const since = useRef({ key: setKey, index: call.transcript.length });
   if (since.current.key !== setKey) since.current = { key: setKey, index: call.transcript.length };
 
-  // Handmatig aangeklikte antwoorden gelden alleen voor de huidige set vragen.
+  // Manually clicked answers only apply to the current set of questions.
   const [manual, setManual] = useState<{ key: string; picks: Record<string, string> }>({ key: setKey, picks: {} });
   const picks = manual.key === setKey ? manual.picks : {};
   const pick = (question: string, label: string) =>
     setManual({ key: setKey, picks: { ...picks, [question]: picks[question] === label ? '' : label } });
 
-  // Wat de beller sinds de vraag zei, inclusief de zin die hij nu nog uitspreekt.
+  // What the caller said since the question, including the sentence still being spoken.
   const heard = [
     ...call.transcript.slice(since.current.index).filter((t) => isCaller(t.role)).map((t) => t.message ?? ''),
     call.partial && isCaller(call.partial.role) ? call.partial.message : '',
   ].join(' ');
 
   const items = resolveQuestions(questions ?? [], heard, picks);
-  const open = items.filter((i) => !i.answer);
-  const answered = items.filter((i) => i.answer);
+  return { questions, open: items.filter((i) => !i.answer), answered: items.filter((i) => i.answer), pick };
+}
+
+interface AskProps {
+  state: QuestionState;
+  /** Shown when there is a solution worth offering already. */
+  onOffer?: () => void;
+}
+
+/** "Ask now": the question the consultant asks next, large enough to read out. */
+export function AskNow({ state, onOffer }: AskProps) {
+  const { questions, open, answered, pick } = state;
   const [primary, ...rest] = open;
 
   return (
-    <section className="panel questions" aria-live="polite">
-      <div className="panel-head">
-        <h2>Vraag nu</h2>
-        <span className="muted small">AI-voorstel · past zich aan terwijl de klant antwoordt</span>
+    <section className="bottom-card ask" aria-live="polite">
+      <div className="card-head">
+        <h2 className="card-label">Ask now</h2>
+        {onOffer ? (
+          <button className="link small" onClick={onOffer}>
+            Offer the best solution now ›
+          </button>
+        ) : (
+          <span className="small muted">Suggested by CallSight</span>
+        )}
       </div>
 
-      {questions === undefined && <p className="muted">CallSight luistert mee…</p>}
-      {questions?.length === 0 && <p className="muted">Geen open vragen: CallSight heeft alles gehoord wat nodig is.</p>}
-      {questions && questions.length > 0 && !primary && (
-        <p className="muted">Alles beantwoord. CallSight bepaalt de volgende stap…</p>
-      )}
+      {questions === undefined && <p className="q-idle">Listening…</p>}
+      {questions && questions.length > 0 && !primary && <p className="q-idle">All answered. One moment…</p>}
 
       {primary && (
         <PrimaryQuestion
@@ -56,33 +72,29 @@ function LiveQuestions({ call }: { call: Call }) {
         />
       )}
 
-      {rest.length > 0 && (
-        <ol className="q-list">
+      {(rest.length > 0 || answered.length > 0) && (
+        <div className="q-more">
           {rest.slice(0, 2).map((i) => (
-            <li key={i.question.question}>
-              <span className="q-text">{i.question.question}</span>
-              {i.question.reason && <span className="q-reason small">{i.question.reason}</span>}
-            </li>
+            <p key={i.question.question} className="q-later">
+              <span className="q-later-label">Then</span> {i.question.question}
+            </p>
           ))}
-        </ol>
-      )}
-
-      {answered.length > 0 && (
-        <ul className="q-done">
-          {answered.map((i) => (
-            <li key={i.question.question} className="small">
-              <button
-                className="q-done-label"
-                title="Klik om dit antwoord ongedaan te maken"
-                onClick={() => i.manual && pick(i.question.question, i.answer!.label)}
-                disabled={!i.manual}
-              >
-                ✓ {i.answer!.label}
-              </button>
-              <span className="muted">{i.question.question}</span>
-            </li>
-          ))}
-        </ul>
+          {answered.length > 0 && (
+            <p className="q-done-row">
+              {answered.map((i) => (
+                <button
+                  key={i.question.question}
+                  className="q-done-chip"
+                  title={`${i.question.question}${i.manual ? ' (click to undo)' : ' (recognised in what the caller said)'}`}
+                  onClick={() => i.manual && pick(i.question.question, i.answer!.label)}
+                  disabled={!i.manual}
+                >
+                  ✓ {i.answer!.label}
+                </button>
+              ))}
+            </p>
+          )}
+        </div>
       )}
     </section>
   );
@@ -92,18 +104,18 @@ function PrimaryQuestion({ item, onPick }: { item: QuestionItem; onPick: (label:
   const q = item.question;
   return (
     <div className="q-primary">
-      {item.follows && <span className="q-follows small">Volgt uit het antwoord “{item.follows}”</span>}
+      {item.follows && <span className="q-follows small">After “{item.follows}”</span>}
       <p className="q-text">{q.question}</p>
-      {q.reason && <p className="q-reason small">{q.reason}</p>}
+      {q.reason && <p className="q-reason">{q.reason}</p>}
       {q.answers && q.answers.length > 0 && (
-        // Anticiperen: per mogelijk antwoord staat al klaar wat de consultant daarna vraagt.
+        // Anticipating: for each possible answer, what the consultant asks next is already lined up.
         <ul className="q-answers">
           {q.answers.map((a) => (
             <li key={a.label}>
-              <button className="chip" onClick={() => onPick(a.label)} title="Aanklikken als de klant dit antwoordt">
-                {a.label}
+              <button className="answer" onClick={() => onPick(a.label)} title="Click if the caller gives this answer">
+                <span className="answer-label">{a.label}</span>
+                {a.next && <span className="answer-next">› {a.next.question}</span>}
               </button>
-              {a.next && <span className="q-next small">→ {a.next.question}</span>}
             </li>
           ))}
         </ul>

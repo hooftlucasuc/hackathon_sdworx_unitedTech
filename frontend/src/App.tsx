@@ -1,22 +1,19 @@
 import { useEffect, useRef, useState } from 'react';
-import { startDemoCall } from './api';
-import { CallDetail } from './components/CallDetail';
 import { CallList } from './components/CallList';
+import { CallView } from './components/CallView';
+import { DemoMenu } from './components/DemoMenu';
 import { ErrorBoundary } from './components/ErrorBoundary';
-import { CallerHistory, CompanyHistory } from './components/History';
 import { SdWorxLogo } from './components/Logo';
-import { NextQuestions } from './components/NextQuestions';
-import { Suggestions } from './components/Suggestions';
 import { config, switchSource } from './config';
-import { DEMO_SCENARIOS, type DemoScenario } from './data/demoPayloads';
 import { useCall, useCallsBy, useCaller, useCompany, useRecentCalls } from './data/hooks';
-import { clearError, clearErrorIf, reportError, reportErrorIfNone, subscribeErrors } from './errors';
+import { clearError, clearErrorIf, reportErrorIfNone, subscribeErrors } from './errors';
 
-const NO_CONNECTION = 'Na 8 seconden nog geen gegevens van Firestore. Controleer de verbinding.';
+const NO_CONNECTION = 'No data from Firestore after 8 seconds. Check the connection.';
 
 export default function App() {
   const recent = useRecentCalls(15);
   const [pinned, setPinned] = useState<string | null>(null);
+  const [drawer, setDrawer] = useState(false);
   const latestId = recent?.[0]?.call_id ?? null;
   const activeId = pinned ?? latestId;
 
@@ -28,10 +25,13 @@ export default function App() {
   const flashId = useNewCallFlash(latestId);
   const error = useErrorMessage();
   useConnectionWatch(recent !== undefined);
-  useTicker(30_000); // relatieve tijden ("3 min geleden") bijwerken
+  useTicker(30_000); // keep relative times ("3 min ago") up to date
 
-  // Klik op de nieuwste call = weer automatisch meevolgen.
-  const select = (id: string) => setPinned(id === latestId ? null : id);
+  // Clicking the newest call = follow the newest call again.
+  const select = (id: string) => {
+    setPinned(id === latestId ? null : id);
+    setDrawer(false);
+  };
 
   return (
     <div className="app">
@@ -40,9 +40,14 @@ export default function App() {
           <SdWorxLogo />
           <span className="divider" aria-hidden="true" />
           <span className="logo">CallSight</span>
-          <SourceIndicator />
         </div>
-        {config.demoMode && <DemoBar onStarted={() => setPinned(null)} />}
+        <div className="topbar-actions">
+          <SourceIndicator />
+          {config.demoMode && <DemoMenu onStarted={() => setPinned(null)} />}
+          <button className="btn btn-quiet" onClick={() => setDrawer(true)}>
+            Calls
+          </button>
+        </div>
       </header>
 
       {error && (
@@ -51,63 +56,66 @@ export default function App() {
           <span className="banner-actions">
             {config.dataSource === 'firestore' && (
               <button className="btn primary" onClick={() => switchSource('demo')}>
-                Overschakelen naar demodata
+                Switch to demo data
               </button>
             )}
             <button className="link" onClick={clearError}>
-              Sluiten
+              Close
             </button>
           </span>
         </div>
       )}
 
-      <main className="grid">
-        <ErrorBoundary label="Calls">
-          <CallList calls={recent} activeId={activeId} pinned={pinned !== null} onSelect={select} onFollow={() => setPinned(null)} />
-        </ErrorBoundary>
+      <main className="page">
+        {pinned && (
+          <p className="pinned-note">
+            You are viewing an earlier call.{' '}
+            <button className="link" onClick={() => setPinned(null)}>
+              Go to the latest call
+            </button>
+          </p>
+        )}
 
-        <div className="center">
-          {!call && (
-            <section className="panel empty">
-              {recent?.length === 0
-                ? 'Nog geen gesprekken. Zodra een medewerker een gesprek begint, luistert CallSight mee en verschijnt het hier.'
-                : 'Laden…'}
-            </section>
-          )}
-          {call && (
-            <>
-              <ErrorBoundary key={`detail-${call.call_id}`} label="Call">
-                <CallDetail
-                  call={call}
-                  caller={caller}
-                  company={company}
-                  callerCalls={callerCalls}
-                  isNew={flashId === call.call_id}
-                />
-              </ErrorBoundary>
-              <ErrorBoundary key={`q-${call.call_id}`} label="Doorvragen">
-                <NextQuestions call={call} />
-              </ErrorBoundary>
-              <ErrorBoundary key={`sol-${call.call_id}`} label="Oplossingen">
-                <Suggestions call={call} />
-              </ErrorBoundary>
-            </>
-          )}
-        </div>
+        {!call && (
+          <section className="empty">
+            {recent === undefined ? (
+              <p>Loading…</p>
+            ) : (
+              <>
+                <h1>Waiting for a call</h1>
+                <p>As soon as you start a call, CallSight listens in and shows you what to ask.</p>
+              </>
+            )}
+          </section>
+        )}
 
-        <div className="side">
-          {call && (
-            <>
-              <ErrorBoundary key={`caller-${call.call_id}`} label="Beller-historie">
-                <CallerHistory known={Boolean(call.caller_id)} calls={callerCalls} currentId={call.call_id} onSelect={select} />
-              </ErrorBoundary>
-              <ErrorBoundary key={`company-${call.call_id}`} label="Bedrijfshistorie">
-                <CompanyHistory company={company} callerId={call.caller_id} currentId={call.call_id} onSelect={select} />
-              </ErrorBoundary>
-            </>
-          )}
-        </div>
+        {call && (
+          <CallView
+            key={call.call_id}
+            call={call}
+            caller={caller}
+            company={company}
+            callerCalls={callerCalls}
+            isNew={flashId === call.call_id}
+          />
+        )}
       </main>
+
+      {drawer && (
+        <div className="drawer-backdrop" onClick={() => setDrawer(false)}>
+          <aside className="drawer" onClick={(e) => e.stopPropagation()} aria-label="Calls">
+            <div className="drawer-head">
+              <h2>Calls</h2>
+              <button className="link" onClick={() => setDrawer(false)}>
+                Close
+              </button>
+            </div>
+            <ErrorBoundary label="Calls">
+              <CallList calls={recent} activeId={activeId} onSelect={select} />
+            </ErrorBoundary>
+          </aside>
+        </div>
+      )}
     </div>
   );
 }
@@ -116,12 +124,12 @@ function SourceIndicator() {
   if (config.dataSource === 'firestore') return <span className="source live">● Live</span>;
   return (
     <span className="source">
-      ● Demodata
+      ● Demo data
       {config.overridden && (
         <>
           {' · '}
           <button className="link" onClick={() => switchSource(null)}>
-            terug naar live
+            back to live
           </button>
         </>
       )}
@@ -129,33 +137,7 @@ function SourceIndicator() {
   );
 }
 
-function DemoBar({ onStarted }: { onStarted: () => void }) {
-  const [busy, setBusy] = useState<string | null>(null);
-  async function run(s: DemoScenario) {
-    setBusy(s.key);
-    onStarted();
-    try {
-      // Met demodata loopt dit tot het gesprek voorbij is; zo start niemand er per ongeluk twee tegelijk.
-      await startDemoCall(s);
-    } catch (e) {
-      reportError(`Demo-gesprek mislukt (${e instanceof Error ? e.message : 'onbekend'}).`);
-    } finally {
-      setBusy(null);
-    }
-  }
-  return (
-    <div className="demobar">
-      <span className="muted small">Demo-gesprek:</span>
-      {DEMO_SCENARIOS.map((s, i) => (
-        <button key={s.key} className="btn btn-quiet" title={s.hint} disabled={busy !== null} onClick={() => run(s)}>
-          {busy === s.key ? 'Gesprek loopt…' : `${i + 1} · ${s.label}`}
-        </button>
-      ))}
-    </div>
-  );
-}
-
-/** Markeert kort een nieuwe call wanneer die bovenaan binnenkomt. */
+/** Briefly highlights a new call when it arrives at the top. */
 function useNewCallFlash(latestId: string | null): string | null {
   const prev = useRef<string | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
@@ -170,7 +152,7 @@ function useNewCallFlash(latestId: string | null): string | null {
   return flash;
 }
 
-/** Firestore meldt offline geen fout maar blijft wachten: na 8 s zonder data tonen we de banner. */
+/** Offline, Firestore reports no error but keeps waiting: after 8 s without data we show the banner. */
 function useConnectionWatch(hasData: boolean): void {
   useEffect(() => {
     if (config.dataSource !== 'firestore') return;

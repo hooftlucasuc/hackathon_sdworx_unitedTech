@@ -14,8 +14,8 @@ export function toDate(v: TimeValue): Date | null {
 
 export const millis = (v: TimeValue): number => toDate(v)?.getTime() ?? 0;
 
-const dateFmt = new Intl.DateTimeFormat('nl-BE', { day: 'numeric', month: 'short', year: 'numeric' });
-const dateTimeFmt = new Intl.DateTimeFormat('nl-BE', {
+const dateFmt = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+const dateTimeFmt = new Intl.DateTimeFormat('en-GB', {
   day: 'numeric',
   month: 'short',
   hour: '2-digit',
@@ -36,11 +36,11 @@ export function fmtRelative(v: TimeValue, now = Date.now()): string {
   const d = toDate(v);
   if (!d) return '—';
   const secs = Math.round((now - d.getTime()) / 1000);
-  if (secs < 60) return 'zonet';
-  if (secs < 3600) return `${Math.floor(secs / 60)} min geleden`;
-  if (secs < 86400) return `${Math.floor(secs / 3600)} u geleden`;
+  if (secs < 60) return 'just now';
+  if (secs < 3600) return `${Math.floor(secs / 60)} min ago`;
+  if (secs < 86400) return `${Math.floor(secs / 3600)} h ago`;
   const days = Math.floor(secs / 86400);
-  if (days < 60) return `${days} d geleden`;
+  if (days < 60) return `${days} day${days === 1 ? '' : 's'} ago`;
   return fmtDate(d);
 }
 
@@ -51,13 +51,20 @@ export function fmtDuration(secs: number | null | undefined): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/** 1st, 2nd, 3rd, 4th, 11th, 21st … */
+export function ordinal(n: number): string {
+  const suffix = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return `${n}${suffix[(v - 20) % 10] ?? suffix[v] ?? suffix[0]}`;
+}
+
 export function sortNewestFirst<T extends { started_at: TimeValue }>(items: T[]): T[] {
   return [...items].sort((a, b) => millis(b.started_at) - millis(a.started_at));
 }
 
 type Timed = { started_at: TimeValue; duration_secs: number; status?: string };
 
-/** Einde van de call bepaalt wat "nieuwste" is; een lopend gesprek staat altijd bovenaan. */
+/** The end of the call decides what is "newest"; a call in progress is always on top. */
 export function endMillis(c: Timed): number {
   if (c.status === 'live') return Number.MAX_SAFE_INTEGER;
   return millis(c.started_at) + (Number.isFinite(c.duration_secs) ? c.duration_secs * 1000 : 0);

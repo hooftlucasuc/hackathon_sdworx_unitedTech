@@ -1,4 +1,4 @@
-// Foutmeldingen voor de banner. Nooit namen of transcript in een melding: alleen wat er misging.
+// Messages for the error banner. Never names or transcript in a message: only what went wrong.
 
 type Listener = (msg: string | null) => void;
 const listeners = new Set<Listener>();
@@ -14,7 +14,7 @@ export function reportError(msg: string): void {
   publish(msg);
 }
 
-/** Meldt alleen als er nog geen melding staat, zodat een specifiekere oorzaak niet overschreven wordt. */
+/** Only reports when no message is showing, so a more specific cause is not overwritten. */
 export function reportErrorIfNone(msg: string): void {
   if (current === null) reportError(msg);
 }

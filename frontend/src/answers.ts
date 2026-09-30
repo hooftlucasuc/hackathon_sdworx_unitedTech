@@ -1,5 +1,5 @@
-// Herkent live, terwijl de beller nog praat, welk verwacht antwoord gegeven is.
-// Deterministisch (trefwoorden, geen LLM), zodat het dashboard meteen kan reageren.
+// Recognises live, while the caller is still talking, which expected answer was given.
+// Deterministic (keywords, no LLM), so the dashboard can react immediately.
 
 import type { ExpectedAnswer, NextQuestion } from './types';
 
@@ -9,7 +9,7 @@ const norm = (s: string) =>
     .replace(/[̀-ͯ]/g, '')
     .toLowerCase();
 
-/** Staat de woordgroep als geheel in de tekst? ("ja" matcht niet in "jaar"). */
+/** Is the phrase in the text as a whole? ("no" does not match inside "not"). */
 export function saysPhrase(text: string, phrase: string): boolean {
   const p = norm(phrase).trim();
   if (!p) return false;
@@ -20,15 +20,15 @@ export function saysPhrase(text: string, phrase: string): boolean {
 export interface QuestionItem {
   question: NextQuestion;
   answer?: ExpectedAnswer;
-  /** Label van het antwoord waaruit deze vraag voortkomt: de vraag was geanticipeerd. */
+  /** Label of the answer this question follows from: the question was anticipated. */
   follows?: string;
-  /** Door de consultant aangeklikt in plaats van herkend. */
+  /** Clicked by the consultant instead of recognised. */
   manual?: boolean;
 }
 
 /**
- * Zet de vragen van B om in wat het dashboard toont: welke vraag beantwoord is (en met wat),
- * en welke vervolgvraag daardoor nu aan de beurt is. Vervolgvragen komen meteen na hun ouder.
+ * Turns B's questions into what the dashboard shows: which question was answered (and how),
+ * and which follow-up question is up next as a result. Follow-ups come right after their parent.
  */
 export function resolveQuestions(
   questions: NextQuestion[],

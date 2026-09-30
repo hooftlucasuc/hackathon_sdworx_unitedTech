@@ -1,5 +1,5 @@
-// Dummydata in de browser, zolang de backend van B er niet is.
-// Scores volgen de contractformule; alleen "similarity" is nagebootst (geen embeddings hier).
+// Dummy data in the browser, for as long as B's backend is not there.
+// Scores follow the contract formula; only "similarity" is simulated (no embeddings here).
 
 import { millis, sortByEndDesc, sortNewestFirst } from '../time';
 import type {
@@ -49,7 +49,7 @@ function recencyOf(lastUsed: number, now: number): number {
   return 1 - (days - 90) / (730 - 90);
 }
 
-/** Kleine vaste afwijking per oplossing, zodat niet alles gelijk scoort. */
+/** Small fixed offset per solution, so not everything scores the same. */
 function jitter(id: string): number {
   let h = 0;
   for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) % 997;
@@ -57,8 +57,8 @@ function jitter(id: string): number {
 }
 
 /**
- * sharpness < 1: het probleem is tijdens het gesprek nog maar half duidelijk, dus lagere gelijkenis.
- * focusId: na het doorvragen is duidelijk welke oplossing past; de rest van de categorie zakt.
+ * sharpness < 1: the problem is only half clear during the call, so lower similarity.
+ * focusId: after the follow-up questions it is clear which solution fits; the rest of the category drops.
  */
 function suggest(category: Category, now: number, sharpness = 1, focusId?: string): Suggestion[] {
   return [...solutions.values()]
@@ -102,7 +102,7 @@ interface NewCall {
   transcript?: Call['transcript'];
 }
 
-/** Beller en bedrijf aanmaken of bijwerken; telt één call bij. */
+/** Create or update caller and company; counts one call. */
 function upsertParties(
   caller_name: string,
   company_name: string,
@@ -188,10 +188,12 @@ function seed(): void {
   };
   sol({
     solution_id: 'sol-vg-herberekening',
-    title: 'Dubbel vakantiegeld herberekenen na loonwijziging',
-    problem_text: 'Dubbel vakantiegeld bediende te laag na loonsverhoging in het refertejaar.',
+    source: 'handboek',
+    document: { title: 'Payroll handbook', section: '§ 4.2 Holiday pay after a salary change' },
+    title: 'Recalculate double holiday pay after a salary change',
+    problem_text: "An employee's double holiday pay is too low after a pay rise in the reference year.",
     solution_text:
-      'Controleer of het nieuwe maandloon van de maand van uitbetaling is doorgezet naar de vakantiegeldberekening. Zet in de looncomponent de basis op "loon maand uitbetaling", herbereken en betaal het verschil uit via een correctiebrief.',
+      "Check whether the new monthly salary of the payment month has been carried over into the holiday pay calculation. Set the basis in the pay component to 'salary of payment month', recalculate, and pay out the difference with a correction slip.",
     category: 'vakantiegeld',
     times_used: 10,
     times_successful: 9,
@@ -199,10 +201,12 @@ function seed(): void {
   });
   sol({
     solution_id: 'sol-vg-vertrek',
-    title: 'Vertrekvakantiegeld ontbreekt op eindafrekening',
-    problem_text: 'Bij uitdiensttreding van een bediende staat geen vertrekvakantiegeld op de afrekening.',
+    source: 'beleid',
+    document: { title: 'Holiday pay policy 2026', section: '§ 3 Leaving holiday pay' },
+    title: 'Leaving holiday pay missing from the final settlement',
+    problem_text: 'When an employee leaves, no leaving holiday pay appears on the final settlement.',
     solution_text:
-      'Datum uit dienst en reden invullen vóór de afsluiting van de maand; daarna de eindafrekening opnieuw laten lopen zodat enkel en dubbel vertrekvakantiegeld worden berekend.',
+      'Enter the leaving date and reason before the month is closed, then run the final settlement again so single and double leaving holiday pay are calculated.',
     category: 'vakantiegeld',
     times_used: 6,
     times_successful: 4,
@@ -210,10 +214,12 @@ function seed(): void {
   });
   sol({
     solution_id: 'sol-dimona-regularisatie',
-    title: 'Dimona IN te laat: regularisatie',
-    problem_text: 'Dimona-aangifte ingediend na de start van de werknemer.',
+    source: 'eerdere_call',
+    document: { title: 'Dimona procedure', section: 'Late declarations' },
+    title: 'Late Dimona IN: regularisation',
+    problem_text: 'The Dimona declaration was filed after the employee started.',
     solution_text:
-      'Dien de Dimona IN alsnog in met de werkelijke startdatum en noteer het tijdstip. Voeg een korte motivatie toe in het dossier; bij controle telt de aantoonbare regularisatie. Zet voortaan de indiening op de dag van contractondertekening.',
+      'File the Dimona IN now with the actual start date and note the time. Add a short justification to the file; in an inspection, a demonstrable regularisation counts. From now on, file on the day the contract is signed.',
     category: 'dimona',
     times_used: 8,
     times_successful: 7,
@@ -222,9 +228,11 @@ function seed(): void {
   });
   sol({
     solution_id: 'sol-dimona-student',
-    title: 'Contingent studentenuren klopt niet',
-    problem_text: 'Urenteller student@work toont een ander saldo dan de loonadministratie.',
-    solution_text: 'Vergelijk de STU-aangiftes per kwartaal en corrigeer de ontbrekende of dubbele aangifte.',
+    source: 'handboek',
+    document: { title: 'Student employment guide', section: 'Hours quota' },
+    title: 'Student hours quota does not match',
+    problem_text: 'The student@work hours counter shows a different balance than the payroll records.',
+    solution_text: 'Compare the STU declarations per quarter and correct the missing or duplicate declaration.',
     category: 'dimona',
     times_used: 5,
     times_successful: 3,
@@ -232,9 +240,12 @@ function seed(): void {
   });
   sol({
     solution_id: 'sol-ziekte-herval',
-    title: 'Gewaarborgd loon bij herval binnen 14 dagen',
-    problem_text: 'Nieuwe ziekteperiode kort na werkhervatting krijgt opnieuw gewaarborgd loon.',
-    solution_text: 'Koppel de nieuwe periode aan de vorige als herval; het gewaarborgd loon loopt dan verder in plaats van opnieuw te starten.',
+    source: 'beleid',
+    document: { title: 'Sickness and guaranteed salary policy', section: 'Relapse' },
+    title: 'Guaranteed salary after a relapse within 14 days',
+    problem_text: 'A new sickness period shortly after returning to work gets guaranteed salary again.',
+    solution_text:
+      'Link the new period to the previous one as a relapse; the guaranteed salary then continues instead of starting over.',
     category: 'ziekte',
     times_used: 7,
     times_successful: 6,
@@ -242,9 +253,11 @@ function seed(): void {
   });
   sol({
     solution_id: 'sol-mc-uitgever',
-    title: 'Maaltijdcheques niet geladen na wissel van uitgever',
-    problem_text: 'Na overstap naar een andere uitgever zijn de maaltijdcheques niet op de kaart gezet.',
-    solution_text: 'Nieuw klantnummer van de uitgever invullen in de werkgeversfiche en de bestelling van de maand opnieuw doorsturen.',
+    source: 'handboek',
+    document: { title: 'Meal vouchers handbook', section: 'Changing issuer' },
+    title: 'Meal vouchers not loaded after switching issuer',
+    problem_text: 'After switching to another issuer, the meal vouchers were not loaded onto the card.',
+    solution_text: "Enter the issuer's new customer number in the employer record and send this month's order again.",
     category: 'maaltijdcheques',
     times_used: 4,
     times_successful: 4,
@@ -252,9 +265,12 @@ function seed(): void {
   });
   sol({
     solution_id: 'sol-bw-vaa',
-    title: 'VAA bedrijfswagen: CO2-waarde niet bijgewerkt',
-    problem_text: 'Voordeel alle aard wagen berekend op een oude CO2-uitstoot.',
-    solution_text: 'CO2-waarde en cataloguswaarde in de wagenfiche aanpassen en het VAA van de lopende maanden herberekenen.',
+    source: 'handboek',
+    document: { title: 'Company car handbook', section: 'Benefit in kind' },
+    title: 'Company car benefit in kind: CO2 value not updated',
+    problem_text: "The car's benefit in kind was calculated on an old CO2 emission value.",
+    solution_text:
+      'Update the CO2 value and catalogue value in the car record and recalculate the benefit in kind for the current months.',
     category: 'bedrijfswagen',
     times_used: 3,
     times_successful: 2,
@@ -262,13 +278,57 @@ function seed(): void {
   });
   sol({
     solution_id: 'sol-lb-voorheffing',
-    title: 'Bedrijfsvoorheffing fout na barema-update',
-    problem_text: 'Netto lonen wijken af na de jaarlijkse update van de bedrijfsvoorheffingsschalen.',
-    solution_text: 'Controleer de gezinstoestand en de toegepaste schaal; herbereken de maand met de juiste schaal en regulariseer via de volgende loonstrook.',
+    source: 'beleid',
+    document: { title: 'Withholding tax policy 2026', section: 'Annual scale update' },
+    title: 'Wrong withholding tax after a tax scale update',
+    problem_text: 'Net salaries differ after the annual update of the withholding tax scales.',
+    solution_text:
+      'Check the family situation and the scale applied; recalculate the month with the correct scale and regularise via the next payslip.',
     category: 'loonberekening',
     times_used: 12,
     times_successful: 10,
     daysAgo: 8,
+  });
+
+  // Three documents for the same situation: the demo "Which document?" narrows them down to one.
+  sol({
+    solution_id: 'sol-doc-certificate',
+    source: 'beleid',
+    document: { title: 'Holiday certificate for departing employees', section: 'Issuing the certificate' },
+    title: 'Holiday certificate for departing employees',
+    problem_text: 'Which document a departing employee takes to the new employer for holiday pay.',
+    solution_text:
+      'Issue the holiday certificate together with the final payslip. It lists the holiday days already paid, so the new employer does not pay them twice. Send it before the end of the month of leaving.',
+    category: 'ontslag',
+    times_used: 14,
+    times_successful: 13,
+    daysAgo: 15,
+  });
+  sol({
+    solution_id: 'sol-doc-leaving-calc',
+    source: 'handboek',
+    document: { title: 'Leaving holiday pay: calculation guide', section: '§ 2 Calculation' },
+    title: 'Leaving holiday pay: calculation guide',
+    problem_text: 'How much leaving holiday pay is due when an employee leaves.',
+    solution_text:
+      'Use this guide when you need the amount: it covers the current and the previous year, variable pay in the basis, and the pro rata month of leaving.',
+    category: 'ontslag',
+    times_used: 11,
+    times_successful: 8,
+    daysAgo: 70,
+  });
+  sol({
+    solution_id: 'sol-doc-final-checklist',
+    source: 'handboek',
+    document: { title: 'Final settlement checklist', section: 'Steps 1–6' },
+    title: 'Final settlement checklist',
+    problem_text: 'Which steps close the final pay run of a departing employee.',
+    solution_text:
+      'Use this checklist while the final pay run is still open: leaving date and reason, notice period, final payslip, and only then the documents for the employee.',
+    category: 'ontslag',
+    times_used: 9,
+    times_successful: 7,
+    daysAgo: 120,
   });
 
   const history: (NewCall & { resolvedWith?: string })[] = [
@@ -276,14 +336,14 @@ function seed(): void {
       call_id: 'seed-vermeulen-1',
       caller_name: 'Jan Peeters',
       company_name: 'Bakkerij Vermeulen',
-      sector: 'Voeding',
-      size: '25 werknemers',
+      sector: 'Food',
+      size: '25 employees',
       started_at: ago(120),
       duration_secs: 210,
-      problem: 'Dubbel vakantiegeld van een bediende lager dan verwacht.',
+      problem: "An employee's double holiday pay is lower than expected.",
       category: 'vakantiegeld',
       urgency: 'midden',
-      summary: 'Vakantiegeld te laag na loonsverhoging, één bediende.',
+      summary: 'Holiday pay too low after a pay rise, one employee.',
       resolvedWith: 'sol-vg-herberekening',
     },
     {
@@ -292,24 +352,24 @@ function seed(): void {
       company_name: 'Bakkerij Vermeulen',
       started_at: ago(30),
       duration_secs: 165,
-      problem: 'Vakantiegeld opnieuw fout voor een andere bediende.',
+      problem: 'Holiday pay wrong again, for a different employee.',
       category: 'vakantiegeld',
       urgency: 'midden',
-      summary: 'Zelfde probleem als eerder, andere werknemer.',
+      summary: 'Same problem as before, different employee.',
       resolvedWith: 'sol-vg-herberekening',
     },
     {
       call_id: 'seed-maes-1',
       caller_name: 'Karim Aydin',
       company_name: 'Logistiek Maes NV',
-      sector: 'Transport en logistiek',
-      size: '140 werknemers',
+      sector: 'Transport and logistics',
+      size: '140 employees',
       started_at: ago(45),
       duration_secs: 190,
-      problem: 'Dimona voor een uitzendkracht die vast in dienst kwam, te laat ingediend.',
+      problem: 'Dimona filed late for a temp worker who was taken on permanently.',
       category: 'dimona',
       urgency: 'hoog',
-      summary: 'Dimona IN te laat, regularisatie gevraagd.',
+      summary: 'Late Dimona IN, regularisation requested.',
       resolvedWith: 'sol-dimona-regularisatie',
     },
     {
@@ -318,10 +378,10 @@ function seed(): void {
       company_name: 'Logistiek Maes NV',
       started_at: ago(10),
       duration_secs: 120,
-      problem: 'Maaltijdcheques van september niet geladen.',
+      problem: "September's meal vouchers were not loaded.",
       category: 'maaltijdcheques',
       urgency: 'midden',
-      summary: 'Wissel van uitgever, cheques niet op de kaart.',
+      summary: 'Switched issuer, vouchers not on the card.',
       resolvedWith: 'sol-mc-uitgever',
     },
     {
@@ -330,26 +390,26 @@ function seed(): void {
       company_name: 'Logistiek Maes NV',
       started_at: ago(3),
       duration_secs: 150,
-      problem: 'Chauffeur opnieuw ziek vijf dagen na werkhervatting.',
+      problem: 'Driver off sick again five days after returning to work.',
       category: 'ziekte',
       urgency: 'laag',
-      summary: 'Vraag of gewaarborgd loon opnieuw start.',
+      summary: 'Asks whether guaranteed salary starts again.',
     },
     {
       call_id: 'seed-atelier-1',
       caller_name: 'Lotte Janssens',
       company_name: 'Atelier Lotte',
-      sector: 'Creatieve sector',
-      size: '6 werknemers',
+      sector: 'Creative sector',
+      size: '6 employees',
       started_at: now - 2 * 3600_000,
       duration_secs: 98,
-      problem: 'Netto loon lager na de update van de voorheffingsschalen.',
+      problem: 'Net pay lower after the update of the withholding tax scales.',
       category: 'loonberekening',
       urgency: 'laag',
-      summary: 'Nettoloon wijkt af sinds deze maand.',
+      summary: 'Net pay has differed since this month.',
     },
   ];
-  // Seed-oplossingen dragen hun tellers al; hier dus niet nog eens ophogen.
+  // Seed solutions already carry their counters; do not increase them again here.
   for (const h of history) {
     addCall(h);
     if (h.resolvedWith) {
@@ -361,12 +421,12 @@ function seed(): void {
 }
 seed();
 
-// ---- API-nabootsing ---------------------------------------------------------
+// ---- API simulation ---------------------------------------------------------
 
 /**
- * Speelt een gesprek live af, zoals A en B het tijdens een echt gesprek in Firestore zouden bijwerken:
- * elke zin woord per woord (partial), daarna in het transcript, met beller, probleem, suggesties en
- * doorvragen die zich bijwerken. Resolvet wanneer het gesprek voorbij is.
+ * Plays a call live, the way A and B would update it in Firestore during a real call:
+ * each line word by word (partial), then into the transcript, with caller, problem, suggestions and
+ * follow-up questions updating along the way. Resolves when the call is over.
  */
 export function mockStartLiveCall(s: DemoScenario): Promise<{ call_id: string }> {
   const call_id = `demo-${s.key}-${Date.now()}`;
@@ -395,7 +455,7 @@ export function mockStartLiveCall(s: DemoScenario): Promise<{ call_id: string }>
 
   const play = async () => {
     for (const line of s.script) {
-      // Tussentijdse spraakherkenning: de zin groeit woord per woord.
+      // Interim speech recognition: the sentence grows word by word.
       const words = splitWords(line.message);
       const lineStart = Math.round((Date.now() - started) / 100) / 10;
       for (let w = 1; w <= words.length; w++) {
@@ -405,7 +465,7 @@ export function mockStartLiveCall(s: DemoScenario): Promise<{ call_id: string }>
       }
       await sleep(250);
 
-      // Zin af: naar het transcript, en wat B na een volledige zin doet (velden, suggesties, doorvragen).
+      // Sentence finished: into the transcript, plus what B does after a full sentence (fields, suggestions, questions).
       const c = calls.get(call_id);
       if (!c) return;
       const next: Call = {
@@ -432,7 +492,7 @@ export function mockStartLiveCall(s: DemoScenario): Promise<{ call_id: string }>
 
     const c = calls.get(call_id);
     if (c) {
-      // Al afgehandeld tijdens het gesprek? Dan blijft het "resolved".
+      // Already resolved during the call? Then it stays "resolved".
       patch({
         status: c.status === 'live' ? 'open' : c.status,
         partial: null,

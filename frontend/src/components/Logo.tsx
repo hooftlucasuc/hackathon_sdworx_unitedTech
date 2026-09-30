@@ -1,4 +1,4 @@
-// Officieel SD Worx-logo (gekleurd), letterlijk uit de sdworx-branding-skill. Niet hertekenen of herkleuren.
+// Official SD Worx logo (colour), verbatim from the sdworx-branding skill. Do not redraw or recolour.
 export function SdWorxLogo({ width = 96 }: { width?: number }) {
   return (
     <svg
