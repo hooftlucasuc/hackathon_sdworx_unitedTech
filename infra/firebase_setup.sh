@@ -41,15 +41,23 @@ done
 say "Firestore security rules (infra/firestore.rules)"
 firebase deploy --only firestore:rules --project "$GCP_PROJECT" --config "$ROOT/firebase.json"
 
+say "Anonieme login aanzetten (het dashboard logt anoniem in)"
+TOKEN="$(gcloud auth print-access-token)"
+if curl -sf -X PATCH \
+     -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "X-Goog-User-Project: $GCP_PROJECT" \
+     "https://identitytoolkit.googleapis.com/admin/v2/projects/${GCP_PROJECT}/config?updateMask=signIn.anonymous.enabled" \
+     -d '{"signIn":{"anonymous":{"enabled":true}}}' >/dev/null; then
+  echo "   anonieme login staat aan"
+else
+  echo "   lukte niet via de API: zet 'Anonymous' aan op"
+  echo "   https://console.firebase.google.com/project/${GCP_PROJECT}/authentication/providers"
+fi
+
 say "Klaar"
 cat <<EOF
-Nog met de hand, eenmalig:
-  1. Google-login aanzetten: https://console.firebase.google.com/project/${GCP_PROJECT}/authentication/providers
-     (Add new provider > Google > Enable). Anonieme login blijft uit: de rules laten die toch niet toe.
-  2. Elk teamlid logt één keer in op het dashboard, daarna geef je toegang:
-       python scripts/grant_access.py grant <e-mail> [<e-mail> ...]
-     De persoon logt daarna opnieuw in, zodat de claim in het token zit.
-  3. Dashboard publiceren (na C's build):
+Nog te doen:
+  1. De VITE_FIREBASE_*-regels hierboven in frontend/.env.local zetten (C), met VITE_FIREBASE_ANON_AUTH=true.
+  2. Dashboard publiceren (na C's build):
        cd frontend && npm run build && cd .. && firebase deploy --only hosting --project ${GCP_PROJECT} --config firebase.json
-     en zet https://${GCP_PROJECT}.web.app in de trigger-substitutie _FRONTEND_ORIGIN van de backend (docs/backend.md).
+     en https://${GCP_PROJECT}.web.app in de trigger-substitutie _FRONTEND_ORIGIN van de backend zetten (docs/backend.md).
 EOF

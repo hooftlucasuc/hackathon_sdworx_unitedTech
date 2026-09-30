@@ -47,9 +47,6 @@ cd backend && python -m venv .venv && source .venv/bin/activate && pip install -
 python scripts/seed.py --check                       # valideren zonder GCP
 python scripts/seed.py --reset --yes                 # Firestore vullen; toont ook de scores van de demo-scenario's
 
-# 3. Toegang tot het dashboard: Google-login plus een toegangsclaim per teamlid
-pip install firebase-admin
-python scripts/grant_access.py grant <e-mail>
 
 # 3. Backend
 #    TODO rol B: commando's
@@ -74,7 +71,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 - **Fictieve data.** Alle personen, bedrijven en experten in `data/seed/` zijn verzonnen; gelijkenis met bestaande personen of bedrijven is toevallig. Eén uitzondering: United Consulting (de werkgever van het team) staat als klant in de seed, met een fictieve contactpersoon en verzonnen cases. De fictieve bedrijfsnamen zijn gecontroleerd tegen de KBO Open Data (snapshot 29-09-2026): geen enkele bestaat als onderneming, zodat er geen verzonnen problemen aan een echt bedrijf hangen. De kennisbank is een illustratie en geen juridisch advies.
 - **Wat we bewaren:** transcript en de geëxtraheerde velden (naam, bedrijf, probleem, categorie, urgentie). **Geen audio.** Namen en transcripten komen nooit in logregels.
 - **Waar:** Firestore en Cloud Run draaien in `europe-west1`. De embeddings worden in de backend zelf berekend (lokaal meertalig model), dus probleemteksten gaan niet naar een extern AI-model.
-- **Toegang:** het dashboard leest alleen na Google-login én met een toegangsclaim die per teamlid wordt toegekend (Firestore security rules); de lijst van wie toegang heeft staat niet in de repo. Schrijven kan uitsluitend de backend. De webhook weigert verzoeken zonder geldige HMAC-signature.
+- **Toegang:** de browser kan alleen lezen, en alleen na Firebase-login; schrijven kan uitsluitend de backend (Firestore security rules). Voor de demo is dat een anonieme login: wie de URL van het dashboard heeft, kan de fictieve calls lezen. Voor productie hoort hier SSO van SD Worx met rollen, zodat alleen consultants hun eigen klanten zien. De webhook weigert verzoeken zonder geldige HMAC-signature.
 - **Open punten voor productie:**
   - De PoC draait op de standaard (VS) omgeving van ElevenLabs. Voor productie is een Enterprise-account met EU-residency plus Zero Retention Mode nodig, en dan nog moet per integratie worden nagegaan of er verwerking buiten de EU plaatsvindt: residency dekt de opslag, en de ElevenLabs-docs noemen post-call webhooks als uitzondering die tot verwerking buiten de regio kan leiden (zie `docs/elevenlabs-payload-check.md` §5). Daarnaast is een verwerkersovereenkomst nodig. De audio-webhook staat uit.
   - Bewaartermijn per veld (bijvoorbeeld transcript 90 dagen, geëxtraheerde velden zolang het klantdossier loopt) en een verwijderprocedure op verzoek.

@@ -123,7 +123,7 @@ DEMO_MODE=true          FRONTEND_ORIGIN=http://localhost:5173
 Punten die tussen de rollen vallen staan met eigenaar en status in `TEAMPLAN.md` §6. Nog open:
 
 - **D:** `infra/firebase_setup.sh` draaien (script klaar) en de `VITE_FIREBASE_*`-config aan C geven.
-- **C:** Google-login in het dashboard; de rules (klaar, `infra/firestore.rules`) laten alleen teamleden met de claim `agent` lezen, toegekend met `scripts/grant_access.py`.
+- **C:** anonieme Firebase-login in het dashboard; de rules (klaar, `infra/firestore.rules`) laten lezen toe na login en schrijven nooit.
 - **C en D:** hosting van het dashboard, daarna de origin in `_FRONTEND_ORIGIN` van de backend-trigger.
 - **D:** IAM voor alle vier, billing en een budget-alert, in het eerste halfuur.
 - **D:** de escalatiedrempel kalibreren op de seed-data, via `_ESCALATION_THRESHOLD`.
