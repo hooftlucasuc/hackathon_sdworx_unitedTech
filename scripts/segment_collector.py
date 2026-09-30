@@ -327,6 +327,21 @@ def make_handler(collector: Collector):
                 self.end_headers()
                 self.wfile.write(data)
                 return
+            if path.startswith("/audio/"):
+                # Testfragmenten voor de demomodus van listen.html. Alleen uit
+                # samples/audio, en geen padtrucs.
+                name = Path(path[len("/audio/") :]).name
+                audio = REPO_ROOT / "samples" / "audio" / name
+                if audio.suffix != ".pcm" or not audio.is_file():
+                    self._send(404, {"error": "unknown clip"})
+                    return
+                data = audio.read_bytes()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Length", str(len(data)))
+                self.end_headers()
+                self.wfile.write(data)
+                return
             if path == "/token":
                 # De browser krijgt nooit de API-key: een single-use token vervalt na
                 # 15 minuten en wordt bij gebruik verbruikt.
