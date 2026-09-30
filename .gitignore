@@ -7,19 +7,6 @@ sa-key.json
 *.pem
 *.p12
 
-# sources: user-provided knowledge is not committed, except the docs, the meta template
-# and the demo corpus used by docs/demo-script.md
-sources/**
-!sources/README.md
-!sources/_meta.template.yaml
-!sources/ALL/
-!sources/BE/
-!sources/NL/
-!sources/FR/
-!sources/**/*.md
-!sources/**/*.meta.yaml
-!sources/**/*.json
-
 # python
 __pycache__/
 *.pyc
@@ -39,3 +26,6 @@ frontend/dist/
 .DS_Store
 .idea/
 .vscode/
+
+# gegenereerde media (voice-over, opnames)
+media/

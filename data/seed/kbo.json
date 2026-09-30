@@ -1,0 +1,63 @@
+{
+  "source": "KBO Open Data, FOD Economie",
+  "snapshot": "29-09-2026",
+  "extract_number": "498",
+  "companies": {
+    "bakkerij-verhulst": [],
+    "garage-kempenpoort": [],
+    "transport-lindeveld": [],
+    "zorgcentrum-de-linde": [],
+    "drukkerij-peeters-zonen": [],
+    "brasserie-de-vijf-wegen": [],
+    "bouwbedrijf-claes": [],
+    "softwarehuis-lumen": [],
+    "kinderopvang-klimop": [],
+    "groothandel-van-rijn": [],
+    "united-consulting": [
+      {
+        "enterprise_number": "0464.943.467",
+        "name": "UNITED CONSULTING",
+        "juridical_form": "Besloten Vennootschap",
+        "start_date": "30-12-1998",
+        "seat": {
+          "zipcode": "2845",
+          "municipality": "Niel",
+          "country": "België"
+        },
+        "main_activity": {
+          "version": "2025",
+          "code": "70200",
+          "description": "Activiteiten van adviesbureaus op het gebied van bedrijfsvoering en overig managementadvies"
+        }
+      },
+      {
+        "enterprise_number": "0466.488.935",
+        "name": "UNITED CONSULTING",
+        "juridical_form": "Besloten Vennootschap",
+        "start_date": "08-07-1999",
+        "seat": {
+          "zipcode": "9570",
+          "municipality": "Lierde",
+          "country": "België"
+        },
+        "main_activity": {
+          "version": "2025",
+          "code": "70200",
+          "description": "Activiteiten van adviesbureaus op het gebied van bedrijfsvoering en overig managementadvies"
+        }
+      },
+      {
+        "enterprise_number": "0476.157.657",
+        "name": "UNITED CONSULTING",
+        "juridical_form": "Buitenlandse entiteit met onroerend goed in België (met rechtspersoonlijkheid)",
+        "start_date": "06-12-2001",
+        "seat": {
+          "zipcode": "",
+          "municipality": "Luxembourg 1449",
+          "country": "Luxemburg (Groot-Hertogdom)"
+        },
+        "main_activity": null
+      }
+    ]
+  }
+}

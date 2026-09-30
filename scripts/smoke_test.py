@@ -143,8 +143,13 @@ def print_card(call: dict) -> None:
 
 def run(client) -> None:
     print(f"\n{BOLD}1. Backend bereikbaar{RESET}")
-    status, health = client.get("/healthz")
-    check(status == 200, f"GET /healthz -> {status} {health if status == 200 else ''}")
+    # /health is new; older deployed images only answer on the OpenAPI document, which is fine as a liveness probe
+    status, health = client.get("/health")
+    path = "/health"
+    if status == 404:
+        status, _ = client.get("/openapi.json")
+        path, health = "/openapi.json", "app draait (oude image zonder /health)"
+    check(status == 200, f"GET {path} -> {status} {health if status == 200 else ''}")
     if status != 200:
         return
 

@@ -169,7 +169,7 @@ def test_api_key_enforced_when_configured():
     c = TestClient(create_app(_settings(api_key="k123")))
     assert c.get("/calls/latest").status_code == 401
     assert c.get("/calls/latest", headers={"X-API-Key": "k123"}).status_code == 404  # authorised, just empty
-    assert c.get("/healthz").status_code == 200
+    assert c.get("/health").status_code == 200 and c.get("/healthz").status_code == 200
     # the webhook is authenticated by its signature, not by the API key
     assert _post_webhook(c, _payload("call_vakantiegeld.json")).status_code == 200
 
