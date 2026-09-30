@@ -1,8 +1,13 @@
 """Embeddings. Interface: embed(texts, task) -> list[list[float]].
 
-VertexEmbedder: Vertex AI via the google-genai SDK (gemini-embedding-001, 768 dims, region from settings).
-HashEmbedder:   deterministic hashed bag-of-words, no network. Only for the `memory` store (tests, local dev).
-D's seed script must use the same model and task types, otherwise the similarities are meaningless.
+Provider is chosen by EMBEDDING_PROVIDER:
+  vertex  VertexEmbedder: Vertex AI via google-genai (gemini-embedding-001, 768 dims). Needs Vertex Gen AI
+          to be allowed on the project; blocked by some org policies (constraints/vertexai.allowedModels).
+  local   LocalEmbedder: sentence-transformers running inside the backend, no Vertex, no org-policy dependency.
+          Default model paraphrase-multilingual-MiniLM-L12-v2 (384 dims); set EMBEDDING_DIM to match.
+  hash    HashEmbedder: deterministic hashed bag-of-words, no network. Tests and the `memory` store only.
+
+Seed and live calls must use the same provider, model and dimension, otherwise the similarities are meaningless.
 """
 
 from __future__ import annotations
@@ -47,6 +52,27 @@ class VertexEmbedder:
         return out
 
 
+class LocalEmbedder:
+    """sentence-transformers, loaded once. Multilingual (NL/FR/EN). Embeddings are L2-normalised so the
+    cosine distance stored in Firestore is comparable across calls and solutions."""
+
+    def __init__(self, model: str, dim: int):
+        from sentence_transformers import SentenceTransformer
+
+        log.info("loading local embedding model %s (first run downloads it)", model)
+        self._model = SentenceTransformer(model)
+        self.dim = dim
+        self._name = model
+        got = self._model.get_sentence_embedding_dimension()
+        if got != dim:
+            raise RuntimeError(f"model {model} has {got} dims, EMBEDDING_DIM is {dim}; set EMBEDDING_DIM={got}")
+
+    def embed(self, texts: list[str], task: str) -> list[list[float]]:
+        # this model is symmetric, so query and document use the same encoding; task is ignored
+        vectors = self._model.encode(list(texts), normalize_embeddings=True, convert_to_numpy=True)
+        return [[float(x) for x in row] for row in vectors]
+
+
 class HashEmbedder:
     """Not semantic: shared words give similarity. Enough to test the flow without GCP."""
 
@@ -77,8 +103,12 @@ def resolve_project(configured: str) -> str:
 
 
 def make_embedder(settings) -> Embedder:
-    if settings.store_backend == "memory":
+    provider = (settings.embedding_provider or "vertex").lower()
+    if provider == "hash" or settings.store_backend == "memory":
         return HashEmbedder(settings.embedding_dim)
+    if provider == "local":
+        log.info("using local embeddings %s (%d dims)", settings.embedding_model, settings.embedding_dim)
+        return LocalEmbedder(settings.embedding_model, settings.embedding_dim)
     project = resolve_project(settings.gcp_project)
     log.info("using Vertex embeddings %s in %s", settings.embedding_model, settings.gcp_region)
     return VertexEmbedder(project, settings.gcp_region, settings.embedding_model, settings.embedding_dim)

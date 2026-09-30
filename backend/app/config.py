@@ -22,6 +22,8 @@ class Settings(BaseSettings):
     gcp_project: str = ""
     gcp_region: str = "europe-west1"
     firestore_database: str = "(default)"
+    # vertex | local | hash. local runs sentence-transformers in the backend (no Vertex, no org-policy need).
+    embedding_provider: str = "vertex"
     embedding_model: str = "gemini-embedding-001"
     embedding_dim: int = 768
 
