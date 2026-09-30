@@ -1,0 +1,41 @@
+# countries/BE.yaml — the only place Belgium differs from any other country.
+code: BE
+name: Belgium
+languages: [nl, fr, en]           # accepted languages of sources and questions
+currency: EUR
+date_format: "DD/MM/YYYY"
+
+# Authority of a source type. Higher = more authoritative. Used by the "authority" signal.
+source_hierarchy:
+  law: 5
+  collective_agreement: 4
+  policy: 3
+  procedure: 2
+  expert_answer: 2
+  email: 1
+  teams: 1
+
+# Freshness decay in days: full score until full_score_days, zero at zero_score_days, linear in between.
+freshness:
+  full_score_days: 180
+  zero_score_days: 730
+
+# Governance
+require_owner: true               # ownerless items lose the full ownership signal
+escalation_threshold: 60          # trust_score below this → escalate=true
+expert_tags:                      # vocabulary for routing experts in this country
+  - payroll_be
+  - holiday_pay
+  - meal_vouchers
+  - company_car
+  - mobility_budget
+  - sick_leave
+  - year_end_bonus
+
+# Free-text notes shown to Claude as context (legacy rules, terminology, known pitfalls)
+context_notes: |
+  Belgian payroll distinguishes white-collar (bedienden) and blue-collar (arbeiders) rules.
+  Joint committee (paritair comité) numbers matter; a rule for PC 200 does not apply to PC 124.
+  Holiday pay (vakantiegeld) for white-collar staff is paid by the employer; for blue-collar
+  staff it is paid by the holiday fund (vakantiekas / RJV). Meal vouchers (maaltijdcheques)
+  have a legal maximum face value and a fixed minimum employee contribution.

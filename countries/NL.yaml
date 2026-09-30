@@ -1,0 +1,37 @@
+# countries/NL.yaml
+code: NL
+name: Netherlands
+languages: [nl, en]
+currency: EUR
+date_format: "DD-MM-YYYY"
+
+# "cao" (collectieve arbeidsovereenkomst) is the Dutch collective agreement.
+source_hierarchy:
+  law: 5
+  cao: 4
+  policy: 3
+  procedure: 2
+  expert_answer: 2
+  email: 1
+  teams: 1
+
+freshness:
+  full_score_days: 180
+  zero_score_days: 730
+
+require_owner: true
+escalation_threshold: 60
+expert_tags:
+  - payroll_nl
+  - vakantiegeld
+  - transitievergoeding
+  - wkr
+  - pensioen
+  - ziekteverzuim
+  - dertiende_maand
+
+context_notes: |
+  Dutch payroll: statutory holiday allowance (vakantiegeld / vakantiebijslag) is at least 8% of
+  gross annual wage, usually paid in May. Sector cao rules can raise this. The WKR
+  (werkkostenregeling) governs tax-free allowances. Transition payment (transitievergoeding)
+  applies on dismissal from day one of employment.

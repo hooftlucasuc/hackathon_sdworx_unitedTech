@@ -1,0 +1,37 @@
+# countries/FR.yaml
+code: FR
+name: France
+languages: [fr, en]
+currency: EUR
+date_format: "DD/MM/YYYY"
+
+# "convention_collective" is the French sector-level collective agreement.
+source_hierarchy:
+  law: 5
+  convention_collective: 4
+  policy: 3
+  procedure: 2
+  expert_answer: 2
+  email: 1
+  teams: 1
+
+freshness:
+  full_score_days: 180
+  zero_score_days: 730
+
+require_owner: true
+escalation_threshold: 60
+expert_tags:
+  - payroll_fr
+  - conges_payes
+  - tickets_restaurant
+  - mutuelle
+  - prime_13eme_mois
+  - arret_maladie
+  - indemnite_licenciement
+
+context_notes: |
+  French payroll: paid leave (congés payés) accrues at 2.5 working days per month (30 per year).
+  Meal vouchers (titres-restaurant) have a capped employer contribution exempt from social charges.
+  The applicable convention collective (identified by its IDCC number) often overrides the
+  legal minimum; a rule for Syntec does not apply to Métallurgie.

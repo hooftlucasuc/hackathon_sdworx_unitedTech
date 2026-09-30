@@ -1,0 +1,13 @@
+# Copy to <file>.meta.yaml next to the source file. Country comes from the folder, never from here.
+title: ""                         # human title shown on the Trust Card
+source_type: policy               # a key of source_hierarchy in countries/<CODE>.yaml
+country: BE                       # informational; must equal the folder (or ALL)
+language: nl                      # one of the country's languages
+owner: null                       # person name, or null (ownerless = trust signal)
+owner_status: unknown             # active | left | unknown
+valid_from: null                  # YYYY-MM-DD or null
+valid_to: null                    # YYYY-MM-DD or null (null = open-ended)
+updated_at: null                  # YYYY-MM-DD; the CLI fills file mtime if null
+status: active                    # active | superseded | draft
+supersedes: null                  # filename of the older version in the same folder, or null
+tags: []                          # free tags; those matching country expert_tags route experts
