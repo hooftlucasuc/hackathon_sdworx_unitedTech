@@ -1,4 +1,5 @@
-// Spiegel van het Firestore-contract in CONTEXT.md. Wijzigt alleen na melding aan alle vier.
+// Mirror of the Firestore contract in CONTEXT.md. Changes only after telling all four roles.
+// Category and urgency values are Dutch in the contract (B and D store them); the UI shows English labels.
 
 export const CATEGORIES = [
   'vakantiegeld',
@@ -12,16 +13,30 @@ export const CATEGORIES = [
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 
+export const CATEGORY_LABEL: Record<Category, string> = {
+  vakantiegeld: 'Holiday pay',
+  loonberekening: 'Payroll calculation',
+  ziekte: 'Sickness',
+  dimona: 'Dimona',
+  maaltijdcheques: 'Meal vouchers',
+  bedrijfswagen: 'Company car',
+  ontslag: 'Dismissal',
+  overig: 'Other',
+};
+
 export const URGENCIES = ['laag', 'midden', 'hoog'] as const;
 export type Urgency = (typeof URGENCIES)[number];
-/** live = gesprek loopt nog; CallSight luistert mee en werkt de call bij. */
+
+export const URGENCY_LABEL: Record<Urgency, string> = { laag: 'Low', midden: 'Medium', hoog: 'High' };
+
+/** live = the call is still going on; CallSight listens in and keeps updating the call. */
 export type CallStatus = 'live' | 'open' | 'resolved';
 
-/** Firestore Timestamp, ISO-string, unix (s of ms) of Date — B kiest, wij lezen alles. */
+/** Firestore Timestamp, ISO string, unix time (s or ms) or Date: B chooses, we read them all. */
 export type TimeValue = Date | string | number | { toDate(): Date } | null | undefined;
 
 export interface TranscriptTurn {
-  /** 'medewerker' of 'beller' ('agent'/'user' uit de oude payload worden ook begrepen). */
+  /** 'medewerker' (consultant) or 'beller' (caller); 'agent'/'user' from the old payload work too. */
   role: string;
   message: string | null;
   time_in_call_secs?: number;
@@ -39,26 +54,26 @@ export interface Suggestion {
   reasons: Reasons;
 }
 
-/** Door B (LLM) voorgestelde doorvraag tijdens een live gesprek; de consultant beslist of hij ze stelt. */
+/** Follow-up question suggested by B (LLM) during a live call; the consultant decides whether to ask it. */
 export interface NextQuestion {
   question: string;
-  /** Waarom deze vraag helpt, bv. "Om te kiezen tussen X en Y" of "Urgentie nog niet bekend". */
+  /** Why this question helps, e.g. "To choose between X and Y" or "Urgency not known yet". */
   reason: string;
   target?: 'caller' | 'company' | 'problem' | 'urgency' | 'solution';
-  /** Verwachte antwoorden (alleen bij gesloten vragen). Het dashboard herkent ze live in wat de beller zegt. */
+  /** Expected answers (closed questions only). The dashboard recognises them live in what the caller says. */
   answers?: ExpectedAnswer[];
 }
 
 export interface ExpectedAnswer {
-  /** Kort, bv. "Dubbel". */
+  /** Short, e.g. "Double". */
   label: string;
-  /** Woorden of woordgroepen waaraan het antwoord herkend wordt, bv. ["dubbel"]. */
+  /** Words or phrases that identify this answer, e.g. ["double"]. */
   keywords: string[];
-  /** De vraag die volgt als dit het antwoord is: zo anticipeert het dashboard. */
+  /** The question that follows if this is the answer: this is how the dashboard anticipates. */
   next?: NextQuestion;
 }
 
-/** Wat er op dit moment gezegd wordt, nog voor de zin af is (tussentijdse spraakherkenning). */
+/** What is being said right now, before the sentence is finished (interim speech recognition). */
 export interface PartialUtterance {
   role: string;
   message: string;
@@ -66,13 +81,13 @@ export interface PartialUtterance {
 
 export interface Call {
   call_id: string;
-  /** Leeg zolang de beller tijdens een live gesprek nog niet herkend is. */
+  /** Empty while the caller has not been identified yet during a live call. */
   caller_id: string;
   company_id: string;
   started_at: TimeValue;
   duration_secs: number;
   problem: string;
-  /** null zolang het tijdens een live gesprek nog niet duidelijk is. */
+  /** null while it is not clear yet during a live call. */
   category: Category | null;
   urgency: Urgency | null;
   summary: string;
@@ -80,9 +95,9 @@ export interface Call {
   status: CallStatus;
   suggestions: Suggestion[];
   chosen_solution_id?: string | null;
-  /** Max 3, telkens vervangen tijdens het gesprek. undefined = nog niet berekend. */
+  /** Max 3, replaced as the call goes on. undefined = not computed yet. */
   next_questions?: NextQuestion[];
-  /** De zin die nu uitgesproken wordt; null zodra die in transcript[] staat. */
+  /** The sentence being spoken now; null once it is in transcript[]. */
   partial?: PartialUtterance | null;
 }
 
@@ -116,7 +131,23 @@ export interface Solution {
   times_successful: number;
   last_used_at: TimeValue;
   source_call_id?: string | null;
+  /** Kind of source in the knowledge base; D's seed uses 'beleid' | 'handboek' | 'eerdere_call'. */
+  source?: string;
+  /** The document to consult for this solution (proposed contract addition, see docs/contract-live.md). */
+  document?: SolutionDocument | null;
 }
+
+export interface SolutionDocument {
+  title: string;
+  section?: string;
+  url?: string;
+}
+
+export const SOURCE_LABEL: Record<string, string> = {
+  beleid: 'Policy',
+  handboek: 'Handbook',
+  eerdere_call: 'Previous call',
+};
 
 export type Unsub = () => void;
 
@@ -129,8 +160,8 @@ export interface DataSource {
   watchSolutions(ids: string[], cb: (solutions: Record<string, Solution>) => void): Unsub;
 }
 
-/** Drempel uit demo-scenario 3: daaronder "geen sterke match, escaleer". */
+/** Threshold from demo scenario 3: below it, "no strong match, escalate". */
 export const ESCALATION_THRESHOLD = 50;
 
-/** Gewichten uit de scoreformule, alleen voor de uitleg-balk. */
+/** Weights from the score formula, only for the explanation bar. */
 export const WEIGHTS = { similarity: 0.6, success: 0.25, recency: 0.15 } as const;

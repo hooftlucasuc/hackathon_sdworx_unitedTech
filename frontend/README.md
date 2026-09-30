@@ -1,10 +1,10 @@
-# CallSight — dashboard (rol C)
+# CallSight — dashboard (role C)
 
-Een SD Worx-medewerker voert het gesprek; CallSight luistert mee en toont tijdens het gesprek wie belt, wat er eerder speelde en welke oplossingen toen werkten. Contractwijziging voor live meeluisteren: [`../docs/contract-live.md`](../docs/contract-live.md).
+An SD Worx consultant leads the call; CallSight listens in and shows, during the call, who is calling, what to ask next and which solution fits best. Contract change for live listening: [`../docs/contract-live.md`](../docs/contract-live.md).
 
-Vite + React + TypeScript. Leest realtime uit Firestore (`onSnapshot`, alleen lezen) en schrijft via de API van B.
+Vite + React + TypeScript. Reads live from Firestore (`onSnapshot`, read-only) and writes through B's API.
 
-## Starten
+## Getting started
 
 ```bash
 npm install
@@ -12,60 +12,57 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Opent op http://localhost:5173 (= `FRONTEND_ORIGIN` in de backend-CORS).
+Opens on http://localhost:5173 (= `FRONTEND_ORIGIN` in the backend CORS).
 
-## Twee modi
+## Two modes
 
-| `VITE_DATA_SOURCE` | Wat |
+| `VITE_DATA_SOURCE` | What |
 |---|---|
-| `mock` (standaard) | Dummydata in de browser volgens het contract, inclusief de scoreformule. Demo-knoppen voegen een call toe. Geen backend nodig. |
-| `firestore` | Realtime uit Firestore (`calls`, `callers`, `companies`, `solutions`). "Werkte / Werkte niet" → `POST /calls/{id}/resolve`, demo-knoppen → `POST /demo/simulate-call`. |
+| `mock` (default) | Dummy data in the browser following the contract, including the score formula. The demo menu plays a live call. No backend needed. |
+| `firestore` | Live from Firestore (`calls`, `callers`, `companies`, `solutions`). "It worked / It didn't work" → `POST /calls/{id}/resolve`, demo menu → `POST /demo/simulate-call`. |
 
-Met `VITE_DEMO_MODE=true` staan bovenaan drie knoppen voor de demo-scenario's (terugkerende beller, nieuwe collega bij een bekend bedrijf, onbekend probleem). Elke knop speelt een gesprek van ongeveer 25 seconden live af: het transcript loopt binnen, beller en probleem worden herkend en de suggesties worden scherper. Met demodata gebeurt dat in de browser; live stuurt de knop `POST /demo/simulate-call` en speelt B het af. Voor een demo met een echt gesprek zet je de knoppen op `false`.
+With `VITE_DEMO_MODE=true` the top bar has a **Demo call ▾** menu with the three demo scenarios (returning caller, new colleague at a known company, unknown problem). Each one plays a call of about 25 seconds live: the transcript streams in, caller and problem are recognised, follow-up questions appear and the suggestions get sharper. With demo data this happens in the browser; live, the menu sends `POST /demo/simulate-call` and B plays it. For a demo with a real call, set it to `false`.
 
-## Plan B op de demodag
+## Plan B on demo day
 
-Valt Firestore of de backend weg, dan hoef je niets te herstarten:
+If Firestore or the backend drops out, there is nothing to restart:
 
-- Krijgt het dashboard na 8 seconden geen gegevens of lukt het verbinden niet, dan verschijnt een melding met de knop **Overschakelen naar demodata**.
-- Of zet zelf `?bron=demo` achter de URL: http://localhost:5173/?bron=demo. Met **terug naar live** naast "● Demodata" of `?bron=live` keer je terug.
+- If the dashboard gets no data after 8 seconds or cannot connect, a message appears with the button **Switch to demo data**.
+- Or add `?source=demo` to the URL yourself: http://localhost:5173/?source=demo. **back to live** next to "● Demo data", or `?source=live`, takes you back.
 
-Demodata leven alleen in de browser: herladen zet ze terug op de beginstand.
+Demo data lives only in the browser: reloading resets it.
 
-Faalt één onderdeel van het scherm (bv. door onverwachte data), dan toont alleen dat onderdeel een melding met **Opnieuw proberen**; de rest blijft werken.
+If one part of the screen fails (e.g. because of unexpected data), only that part shows a message with **Try again**; the rest keeps working.
 
-## Wat het scherm toont
+## What the screen shows
 
-- **Links:** de 15 recentste calls; een lopend gesprek staat bovenaan met "● Live". Het scherm volgt automatisch de nieuwste call; klik je een oudere aan, dan brengt "Naar nieuwste" je terug.
-- **Midden:** beller ("3e call" of "Nieuwe beller"), bedrijf, urgentie en probleem. Tijdens een gesprek lopen een timer en het transcript mee, en velden die nog niet herkend zijn tonen "wordt herkend…". Het blok **Vraag nu** toont tijdens het gesprek de doorvragen die CallSight voorstelt (`next_questions`), elk met de reden waarom de vraag helpt, en per mogelijk antwoord al de vervolgvraag. Terwijl de klant nog praat (`partial`) herkent het dashboard het antwoord (`src/answers.ts`), vinkt de vraag af en zet de vervolgvraag bovenaan; de consultant kan een antwoord ook aanklikken. Daaronder de top 5 oplossingen; de punten per deelwaarde (gelijkenis, succes, recent) tellen op tot de score. Is de beste score lager dan 50, dan staat er tijdens het gesprek "nog geen sterke match" en na afloop "escaleer naar een expert".
-- **Rechts:** beller-historie en bedrijfshistorie (calls van collega's), telkens met de oplossing die toen gekozen werd.
+One calm screen for the consultant, who reads out what CallSight suggests. Styled after sdworx.be: white base, light grey surfaces, SD Worx Display for headings, a blue band with a slanted bottom edge.
 
-## Wat het dashboard van de andere rollen verwacht
+- **Blue band at the top:** who is calling and from which company, "3rd call" or "First call", urgency, category, and during the call "● Live" with a timer.
+- **Conversation** (top): this call so far, like a chat, with the newest words at the bottom while people talk (`partial`). After the call, the summary appears underneath.
+- **Bottom, "Ask now"** (during a live call): the question to ask now, large enough to read out, with the reason and, for each possible answer, the follow-up question. While the caller talks, the dashboard recognises the answer (`src/answers.ts`), ticks it off and puts the follow-up on top; an answer can also be clicked.
+- **Bottom, "Offer this solution" / "Consult this document"**: appears by itself when nothing is left to ask or the call ends, or earlier via "Offer the best solution now". Shows the best solution with match label and score, its chance of success ("93% success · worked 13 of 14 times"), the document to consult (source, title, section, link), the text to read out, "It worked" / "It didn't work", and **Why not the others?** with what the other candidates are for. Below the threshold: "No strong match: escalate to an expert".
+- **Best matches** (side): the top candidates with source and chance of success, updating live. Click one to offer it.
+- **Calls** (button top right): drawer with recent calls to open an earlier one. By default the screen follows the latest call.
+- **Demo call** (button top right, only with `VITE_DEMO_MODE=true`): four demo scenarios, including **Which document?**, where three documents fit and the follow-up questions narrow it down to one.
 
-- **B:** `calls.started_at` als Firestore-Timestamp (daarop wordt gesorteerd). De score staat op 0–100, de `reasons` op 0–1. CORS staat open voor `http://localhost:5173`.
-- **B/D:** Firestore-rules die lezen toestaan voor het dashboard. Omdat gespreksdata persoonsgegevens zijn, zet je die niet publiek open. Een voorstel: Anonymous Auth aanzetten in Firebase, `VITE_FIREBASE_ANON_AUTH=true`, en:
+The contract stores categories, urgencies and sources as Dutch values (`vakantiegeld`, `hoog`, `handboek`, …); the dashboard shows English labels (`CATEGORY_LABEL`, `URGENCY_LABEL`, `SOURCE_LABEL` in `src/types.ts`). Solution texts and suggested questions are shown as B and D store them. `solutions.document` (`{title, section?, url?}`) is a proposed addition, see `docs/contract-live.md`.
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{db}/documents {
-    match /{col}/{id} {
-      allow read: if request.auth != null && col in ['calls', 'callers', 'companies', 'solutions'];
-      allow write: if false;
-    }
-  }
-}
-```
+## What the dashboard expects from the other roles
 
-## Structuur
+- **B:** `calls.started_at` as a Firestore Timestamp (used for sorting). The score is 0–100, the `reasons` 0–1. CORS open for `http://localhost:5173`.
+- **B/D:** Firestore rules that allow the dashboard to read. The rules in `infra/firestore.rules` only let team members with the `agent` claim read, so the dashboard still needs a Google sign-in (open task for C, see `TEAMPLAN.md` §6).
+
+## Structure
 
 ```
 src/
-  types.ts            contract (collecties, score-gewichten, escalatiedrempel)
-  data/firestore.ts   realtime lezen uit Firestore
-  data/mock.ts        dummydata + scoreformule voor offline werken
-  data/demoPayloads.ts  de 3 scenario's als ElevenLabs-webhookbody
-  data/hooks.ts       React-hooks bovenop de gekozen databron
-  api.ts              resolve + simulate-call
-  components/         CallList, CallDetail, Suggestions, History
+  types.ts              contract (collections, labels, score weights, escalation threshold)
+  answers.ts            recognises expected answers while the caller talks
+  data/firestore.ts     live reading from Firestore
+  data/mock.ts          dummy data + score formula for working offline
+  data/demoPayloads.ts  the 3 scenarios as a scripted live call (and webhook body)
+  data/hooks.ts         React hooks on top of the chosen data source
+  api.ts                resolve + simulate-call
+  components/           CallView, CallerBanner, Conversation, NextQuestions, Solutions, CallList, DemoMenu
 ```

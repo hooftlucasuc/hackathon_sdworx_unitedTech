@@ -90,6 +90,20 @@ Open vragen ("Welke foutcode krijg je?") krijgen geen `answers`; die blijven sta
 
 Het dashboard toont de vragen alleen tijdens een live gesprek, in een blok "Vraag nu", met de vermelding dat het een AI-voorstel is.
 
+## Documenten in de kennisbank: nieuw voor B en D
+
+De consultant zoekt in de kennisbank vaak naar het juiste document ("welk van deze drie documenten moet ik raadplegen?"). CallSight geeft dan meteen één duidelijk antwoord, met waarom de andere niet passen.
+
+**Voorstel:** een optioneel veld `document` op `solutions/{solution_id}`:
+
+```json
+"document": { "title": "Holiday certificate for departing employees", "section": "Issuing the certificate", "url": "https://…" }
+```
+
+- `source` bestaat al in de seed van D (`beleid`, `handboek`, `eerdere_call`); het dashboard toont het als Policy, Handbook, Previous call.
+- `document.url` mag leeg blijven; staat er een link, dan toont het dashboard "Open ↗".
+- Liggen meerdere documenten dicht bij elkaar in score, dan moet het LLM van B de vraag voorstellen die ze uit elkaar haalt (regel 2 bij de doorvragen hierboven), met de documenttitels in de reden.
+- Het dashboard toont onderaan "Consult this document" met de slagingskans (`times_successful / times_used`) en onder **Why not the others?** de `problem_text` van de andere kandidaten. Schrijf `problem_text` dus als "waarvoor dient dit document".
 ## API
 
 | Method | Path | Wijziging |
@@ -104,7 +118,7 @@ Het dashboard toont de vragen alleen tijdens een live gesprek, in een blok "Vraa
 - **A · Voice:** realtime spraak-naar-tekst van ElevenLabs (Scribe realtime: nakijken of dat past, en of het **tussentijdse resultaten** geeft terwijl iemand nog praat), medewerker en beller uit elkaar houden (twee audiokanalen of sprekerherkenning), tussentijdse tekst en elke afgewerkte zin doorsturen naar B. Voor de demo volstaat een laptopmicrofoon; een telefoonkoppeling alleen als er tijd over is.
 - **B · Backend:** live-ingang, `partial` doorschrijven (licht: geen LLM, alleen Firestore), velden herkennen, doorvragen met verwachte antwoorden genereren na elke afgewerkte zin, suggesties herberekenen, status `live` → `open`, `/demo/simulate-call` live laten afspelen (inclusief doorvragen).
 - **C · Dashboard:** klaar. Toont de live toestand en het blok "Vraag nu"; met demodata (`?bron=demo`) speelt het een volledig gesprek lokaal af, inclusief doorvragen, ook zonder backend.
-- **D · Data en demo:** demoscript met een medewerker (fictief: "Evi") en een beller, jury-verhaal en README bijwerken, privacypunten hieronder.
+- **D · Data en demo:** demoscript met een medewerker (fictief: "Simon") en een beller, jury-verhaal en README bijwerken, privacypunten hieronder.
 
 ## Privacy
 

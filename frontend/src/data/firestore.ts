@@ -31,19 +31,19 @@ import type {
   Unsub,
 } from '../types';
 
-// Alleen lezen. Schrijven loopt via de API van B.
+// Read-only. Writes go through B's API.
 
 const num = (v: unknown): number => (typeof v === 'number' && Number.isFinite(v) ? v : 0);
 const str = (v: unknown): string => (typeof v === 'string' ? v : '');
 
-// problem_embedding (768 floats) hoort niet in de UI-state.
+// problem_embedding (768 floats) does not belong in UI state.
 function withoutEmbedding(d: DocumentData): DocumentData {
   const copy = { ...d };
   delete copy.problem_embedding;
   return copy;
 }
 
-/** Onvolledige suggesties laten vallen of aanvullen, zodat één fout veld het scherm niet breekt. */
+/** Drop or complete incomplete suggestions, so one bad field does not break the screen. */
 function mapSuggestions(v: unknown): Suggestion[] {
   if (!Array.isArray(v)) return [];
   return v.flatMap((s): Suggestion[] => {
@@ -105,15 +105,18 @@ function mapCall(id: string, d: DocumentData): Call {
 }
 
 function mapSolution(id: string, d: DocumentData): Solution {
+  const doc = d.document && typeof d.document === 'object' && typeof d.document.title === 'string' ? d.document : null;
   return {
     ...(withoutEmbedding(d) as Omit<Solution, 'solution_id'>),
     solution_id: id,
     times_used: num(d.times_used),
     times_successful: num(d.times_successful),
+    source: typeof d.source === 'string' ? d.source : undefined,
+    document: doc ? { title: doc.title, section: str(doc.section) || undefined, url: str(doc.url) || undefined } : null,
   };
 }
 
-/** Bron die nooit iets levert: het scherm blijft laden en de banner biedt demodata aan. */
+/** Source that never delivers: the screen keeps loading and the banner offers demo data. */
 const silentSource: DataSource = {
   watchRecentCalls: () => () => undefined,
   watchCall: () => () => undefined,
@@ -125,7 +128,7 @@ const silentSource: DataSource = {
 
 export function createFirestoreSource(): DataSource {
   if (!config.firebase.projectId || !config.firebase.apiKey) {
-    reportError('Firebase-config ontbreekt in .env.local (VITE_FIREBASE_*).');
+    reportError('Firebase config missing in .env.local (VITE_FIREBASE_*).');
     return silentSource;
   }
 
@@ -136,12 +139,12 @@ export function createFirestoreSource(): DataSource {
     db = getFirestore(app);
     ready = config.anonAuth ? signInAnonymously(getAuth(app)).then(() => undefined) : Promise.resolve();
   } catch (e) {
-    reportError(`Firebase starten mislukt (${e instanceof Error ? e.message : 'onbekend'}).`);
+    reportError(`Starting Firebase failed (${e instanceof Error ? e.message : 'unknown'}).`);
     return silentSource;
   }
-  ready.catch((e: { code?: string }) => reportError(`Aanmelden bij Firebase mislukt (${e.code ?? 'onbekend'}).`));
+  ready.catch((e: { code?: string }) => reportError(`Signing in to Firebase failed (${e.code ?? 'unknown'}).`));
 
-  // Pas abonneren na (optionele) aanmelding, en netjes opruimen als de component al weg is.
+  // Subscribe only after the (optional) sign-in, and clean up if the component is already gone.
   const later = (start: () => Unsub): Unsub => {
     let unsub: Unsub | null = null;
     let stopped = false;
@@ -157,16 +160,16 @@ export function createFirestoreSource(): DataSource {
   };
 
   const onErr = (what: string) => (e: FirestoreError) =>
-    reportError(`Realtime lezen van ${what} mislukt (${e.code}).`);
+    reportError(`Live reading of ${what} failed (${e.code}).`);
 
   return {
     watchRecentCalls: (n, cb) =>
       later(() =>
         onSnapshot(
-          // Firestore sorteert op start; client-side op einde, want een lange call komt later binnen.
+          // Firestore sorts by start; we sort by end on the client, because a long call arrives later.
           query(collection(db, 'calls'), orderBy('started_at', 'desc'), limit(n)),
           (s) => {
-            // Leeg antwoord uit de cache = nog geen contact met de server: blijven laden.
+            // Empty answer from the cache = no contact with the server yet: keep loading.
             if (s.empty && s.metadata.fromCache) return;
             cb(sortByEndDesc(s.docs.map((d) => mapCall(d.id, d.data()))));
           },
@@ -188,7 +191,7 @@ export function createFirestoreSource(): DataSource {
         onSnapshot(
           doc(db, 'callers', id),
           (s) => cb(s.exists() ? ({ ...(s.data() as Omit<Caller, 'caller_id'>), caller_id: s.id }) : null),
-          onErr('beller'),
+          onErr('caller'),
         ),
       ),
 
@@ -197,17 +200,17 @@ export function createFirestoreSource(): DataSource {
         onSnapshot(
           doc(db, 'companies', id),
           (s) => cb(s.exists() ? ({ ...(s.data() as Omit<Company, 'company_id'>), company_id: s.id }) : null),
-          onErr('bedrijf'),
+          onErr('company'),
         ),
       ),
 
-    // Eén gelijkheidsfilter, client-side sorteren: geen composite index nodig.
+    // One equality filter, sorted on the client: no composite index needed.
     watchCallsBy: (field, id, cb) =>
       later(() =>
         onSnapshot(
           query(collection(db, 'calls'), where(field, '==', id), limit(50)),
           (s) => cb(sortNewestFirst(s.docs.map((d) => mapCall(d.id, d.data())))),
-          onErr('historie'),
+          onErr('history'),
         ),
       ),
 
@@ -222,7 +225,7 @@ export function createFirestoreSource(): DataSource {
             });
             cb(out);
           },
-          onErr('oplossingen'),
+          onErr('solutions'),
         ),
       ),
   };

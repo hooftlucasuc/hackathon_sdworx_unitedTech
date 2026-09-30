@@ -2,14 +2,14 @@ import { useEffect, useState } from 'react';
 import type { Call, Caller, Company, Solution, Unsub } from '../types';
 import { source } from './index';
 
-/** undefined = nog aan het laden (of geen id). */
+/** undefined = still loading (or no id). */
 function useWatch<T>(make: ((cb: (v: T) => void) => Unsub) | null, key: string): T | undefined {
   const [value, setValue] = useState<T | undefined>(undefined);
   useEffect(() => {
     setValue(undefined);
     if (!make) return;
     return make(setValue);
-    // key vat de afhankelijkheden van make samen
+    // key sums up what make depends on
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
   return value;
