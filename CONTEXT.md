@@ -115,22 +115,22 @@ DEMO_MODE=true          FRONTEND_ORIGIN=http://localhost:5173
 
 - **Backend (B) staat:** `backend/` bevat de volledige FastAPI-app, 39 groene tests, een Dockerfile en `infra/cloudbuild.backend.yaml` voor automatische deploy naar Cloud Run bij elke push naar `main`. Opzet en koppeling met GitHub: `docs/backend.md`.
 - **GCP-setup:** `infra/gcp_setup.sh` is de CallSight-versie. Het maakt Firestore, Artifact Registry, beide service accounts, het webhook-secret en alle indexen. D hoeft dit niet opnieuw te schrijven.
-- **Seed-data van D** laadt via `python -m app.cli load-solutions <bestand>.json` en `python -m app.cli load-calls <bestand>.json`. Formaat en voorbeeld: `TEAMPLAN.md` §6.
+- **Seed-data van D** laadt met `python scripts/seed.py --reset --yes`, via `load_solutions` en `load_calls` van de backend. `--check` valideert zonder GCP, `--probe` scoort de drie demo-scenario's. Details: `TEAMPLAN.md` §6.
 - **Restanten van het eerdere TrustCard-plan** (`BUILD_SPEC.md`, `countries/`, `sources/`) staan nog in de root en zijn niet de huidige koers. Ze gaan weg bij de freeze.
 
 ## Gedeelde taken
 
 Punten die tussen de rollen vallen staan met eigenaar en status in `TEAMPLAN.md` §6. Nog open:
 
-- **D:** Firebase aan het GCP-project koppelen en de `VITE_FIREBASE_*`-config aan C geven.
-- **D en C:** Firestore security rules (browser alleen lezen, na login) en de login in het dashboard.
+- **D:** `infra/firebase_setup.sh` draaien (script klaar) en de `VITE_FIREBASE_*`-config aan C geven.
+- **C:** anonieme Firebase-login in het dashboard; de rules (klaar, `infra/firestore.rules`) laten lezen toe na login en schrijven nooit.
 - **C en D:** hosting van het dashboard, daarna de origin in `_FRONTEND_ORIGIN` van de backend-trigger.
 - **D:** IAM voor alle vier, billing en een budget-alert, in het eerste halfuur.
 - **D:** de escalatiedrempel kalibreren op de seed-data, via `_ESCALATION_THRESHOLD`.
 - **Team:** beslissen vóór de freeze of `resolve` ook een nieuwe oplossing mag aanmaken.
 - **D:** de TrustCard-bestanden verwijderen bij de freeze.
 
-Al klaar: de composite indexes, het webhook-secret in Secret Manager, de gedeelde `slug()` en embedder, en de `escalate`-vlag. D laadt seed-data met `python -m app.cli load-solutions` en `python -m app.cli load-calls`, zodat seed en live calls dezelfde ID's en embeddings krijgen.
+Al klaar: de composite indexes, het webhook-secret in Secret Manager, de gedeelde `slug()` en embedder, en de `escalate`-vlag. D laadt seed-data met `python scripts/seed.py`, dat `load_solutions` en `load_calls` aanroept, zodat seed en live calls dezelfde ID's en embeddings krijgen.
 
 ## Demo-scenario's (D schrijft ze uit, A oefent ze)
 

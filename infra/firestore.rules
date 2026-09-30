@@ -1,0 +1,13 @@
+rules_version = '2';
+// Het dashboard leest alleen, na Firebase-login (anoniem, zoals het dashboard van C dat doet).
+// Schrijven gebeurt uitsluitend door de backend via de server-SDK, die de rules omzeilt.
+// Anonieme login is een bewuste keuze voor de demo; voor productie hoort hier SSO met rollen (README, Security).
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /{collection}/{docId} {
+      allow read: if request.auth != null
+                  && collection in ['calls', 'callers', 'companies', 'solutions'];
+      allow write: if false;
+    }
+  }
+}

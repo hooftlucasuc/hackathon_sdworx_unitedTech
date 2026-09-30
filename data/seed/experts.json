@@ -1,0 +1,8 @@
+[
+  {"id": "an-wouters", "name": "An Wouters", "team": "Payroll BE", "topics": ["vakantiegeld", "loonberekening"]},
+  {"id": "karim-el-idrissi", "name": "Karim El Idrissi", "team": "Sociaal-juridisch advies", "topics": ["ontslag", "overig", "internationale tewerkstelling"]},
+  {"id": "lotte-vermeulen", "name": "Lotte Vermeulen", "team": "Aangiftes (Dimona, DmfA)", "topics": ["dimona"]},
+  {"id": "pieter-goossens", "name": "Pieter Goossens", "team": "Mobiliteit en verloning", "topics": ["bedrijfswagen", "maaltijdcheques"]},
+  {"id": "marieke-de-boer", "name": "Marieke de Boer", "team": "Payroll NL", "topics": ["vakantiegeld", "loonberekening"]},
+  {"id": "jonas-lambrecht", "name": "Jonas Lambrecht", "team": "Ziekte en afwezigheden", "topics": ["ziekte"]}
+]
