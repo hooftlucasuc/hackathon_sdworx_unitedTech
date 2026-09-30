@@ -31,9 +31,16 @@ def create_app(settings: Optional[Settings] = None, store=None, embedder=None) -
     app.include_router(webhook.router)
     app.include_router(api.router)
 
-    @app.get("/healthz", tags=["ops"])
-    def healthz() -> dict:
-        return {"status": "ok", "store": settings.store_backend, "demo_mode": settings.demo_mode}
+    # Cloud Run reserves paths ending in "z" (e.g. /healthz) on *.run.app, so /health is the one to use there.
+    @app.get("/health", tags=["ops"])
+    @app.get("/healthz", tags=["ops"], include_in_schema=False)
+    def health() -> dict:
+        return {
+            "status": "ok",
+            "store": settings.store_backend,
+            "embedding_provider": settings.embedding_provider,
+            "demo_mode": settings.demo_mode,
+        }
 
     return app
 

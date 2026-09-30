@@ -50,7 +50,9 @@ steps:
       - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
       - --region=${_REGION}
       - --service-account=${_RUNTIME_SA}@$PROJECT_ID.iam.gserviceaccount.com
-      - --allow-unauthenticated
+      # public without an allUsers IAM binding (allowed under domain-restricted-sharing org policies);
+      # the webhook still authenticates every request with its HMAC signature
+      - --no-invoker-iam-check
       - --min-instances=0
       - --max-instances=3
       - --memory=${_MEMORY}

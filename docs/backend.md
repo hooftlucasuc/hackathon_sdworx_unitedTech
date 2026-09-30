@@ -94,7 +94,7 @@ Klik **Run** op de trigger, of push een wijziging in `backend/`. Na ongeveer 3 m
 
 ```bash
 URL=$(gcloud run services describe callsight-backend --region=europe-west1 --format='value(status.url)')
-curl -s $URL/healthz
+curl -s $URL/health    # niet /healthz: Cloud Run reserveert paden op z
 curl -s -X POST $URL/demo/simulate-call -H 'Content-Type: application/json' \
   --data @backend/samples/call_vakantiegeld.json
 curl -s $URL/calls/latest | python3 -m json.tool | head -40
@@ -165,6 +165,7 @@ De in-memory store gebruikt een woord-hash in plaats van echte embeddings. De sc
 | Symptoom | Oorzaak en oplossing |
 |---|---|
 | Build faalt op `iam.serviceAccounts.actAs` | Het deploy-account mist `serviceAccountUser` op het runtime-account. Draai `gcp_setup.sh` opnieuw. |
+| `/healthz` geeft een Google-404 (robotpagina) op Cloud Run | Cloud Run reserveert paden die op `z` eindigen. Gebruik `/health`; lokaal werken beide. |
 | Deploy faalt op `allUsers` / policy constraint | Een organisatie-policy verbiedt publieke Cloud Run-services. Vervang in `infra/cloudbuild.backend.yaml` `--allow-unauthenticated` door `--no-invoker-iam-check`. |
 | `suggestions_status: search_error` | De vector-index op `solutions` bouwt nog of ontbreekt. Wacht, en draai daarna `python -m app.cli rescore <call_id>`. |
 | `embedding_error` of een 404 op het model | `gemini-embedding-001` is niet beschikbaar in de regio voor dit project. Zet de substitutie `_EMBEDDING_MODEL` op `text-multilingual-embedding-002` en laad de oplossingen opnieuw met `load-solutions --reset --yes`. |
