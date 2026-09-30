@@ -78,7 +78,7 @@ Details voor wie tegen de API bouwt:
 - `/calls/{id}/suggestions` geeft de opgeslagen score plus de actuele velden van de oplossing: `solution_text`, `problem_text`, `category`, `times_used`, `times_successful`, `last_used_at`.
 - `/calls/{id}/resolve` geeft 404 bij een onbekende call of oplossing en 409 als de call al opgelost is.
 - History-lijsten in `/callers/{id}` en `/companies/{id}` bevatten geen transcript en geen suggestions, nieuwste eerst.
-- Is `API_KEY` gezet op de backend, dan vraagt elke route behalve de webhook en `/healthz` de header `X-API-Key`. Standaard staat dit uit.
+- Is `API_KEY` gezet op de backend, dan vraagt elke route behalve de webhook en `/health` de header `X-API-Key`. Standaard staat dit uit.
 - Voorbeeldpayloads en voorbeeldoplossingen staan in `backend/samples/`. De OpenAPI-docs staan op `<backend-url>/docs`.
 
 ### Score van een oplossing

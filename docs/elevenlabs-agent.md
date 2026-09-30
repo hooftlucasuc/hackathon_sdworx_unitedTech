@@ -20,12 +20,31 @@ die meeluistert met een mens-mens-gesprek, en het is de makkelijkere van de twee
 | Naam | `CallSight intake NL` | |
 | Taal | `nl` | |
 | TTS-model | `eleven_flash_v2_5` | het standaardmodel `eleven_flash_v2` is **Engels-only**; voor Nederlands moet je naar v2.5 of `eleven_multilingual_v2`. v2.5 is de snelste van de twee. |
-| Stem | uit env `ELEVENLABS_VOICE_ID` | kies een Nederlandstalige stem in de Voice Library en zet het id in `.env`. Laat je hem leeg, dan neemt ElevenLabs `cjVigY5qzO86Huf0OWal`. Let op: de oude default voices verlopen 31-12-2026. |
+| Stem | `5fPlr1QYE4Evf0da3knC` — Florian De'Booser, nl-BE | zie §1.1. Staat in `.env` als `ELEVENLABS_VOICE_ID`; leeg laten geeft de ElevenLabs-default `cjVigY5qzO86Huf0OWal`, een Engelse stem. |
 | Gespreks-LLM | `gemini-2.5-flash` | latency telt in een telefoongesprek. `claude-haiku-4-5` is een gelijkwaardig alternatief; het staat in dezelfde enum. |
 | Analyse-LLM | `gemini-2.5-flash` | doet de extractie ná het gesprek; hier telt latency niet, maar wel consistentie. |
 | ASR | `scribe_realtime`, quality `high` | met `keywords` voorgeladen op payroll-jargon, zie §7. |
 | Max duur | 180 s | default is 600. Drie minuten is ruim voor een intake, en het voorkomt dat een vergeten tabblad credits opbrandt. |
 | Samenvattingstaal | `nl` | zonder deze instelling raadt ElevenLabs de taal van samenvatting, titel en rationales. |
+
+### 1.1 Waarom deze stem
+
+De Voice Library geeft op `language=nl` dertig conversationele stemmen, maar
+negenentwintig daarvan zijn nl-NL. Onze bellers zijn Belgische werkgevers, en een
+Noord-Nederlandse harde g op een SD Worx-lijn valt meteen op.
+
+Er is precies één Vlaamse stem die op het gratis plan mag: **Florian De'Booser**,
+`5fPlr1QYE4Evf0da3knC`, locale nl-BE, accent flemish, use case conversational. Die is
+aan de workspace toegevoegd en staat in `.env`.
+
+Van de nl-NL-stemmen kwam Maaike (`xoc65D3DrU0JxBTKaSgV`, Brabants accent met zachte g)
+qua klank het dichtst in de buurt, maar die vereist een betaald plan — de API antwoordt
+`paid_plan_required`. Gaat de workspace ooit naar een betaald plan, dan is dat het
+alternatief om te proberen.
+
+De agent bestaat en draait: `agent_2601m3svj41kfdjtyknae30gckya`. Een nieuwe run van
+`scripts/elevenlabs_setup.py` werkt hem bij, want dat id staat in `.env`; hij maakt geen
+tweede agent aan.
 
 ## 2. First message
 

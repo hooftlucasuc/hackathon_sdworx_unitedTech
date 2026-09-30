@@ -49,7 +49,8 @@ for role in roles/datastore.user roles/aiplatform.user; do
     --role="$role" --condition=None --quiet >/dev/null
 done
 # deployer: push images, deploy Cloud Run, write build logs, act as the runtime SA
-for role in roles/run.admin roles/artifactregistry.writer roles/logging.logWriter; do
+# storage.objectViewer: read the source tarball that `gcloud builds submit` uploads to the _cloudbuild bucket
+for role in roles/run.admin roles/artifactregistry.writer roles/logging.logWriter roles/storage.objectViewer; do
   gcloud projects add-iam-policy-binding "$GCP_PROJECT" --member="serviceAccount:$DEPLOYER" \
     --role="$role" --condition=None --quiet >/dev/null
 done
