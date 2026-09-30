@@ -91,7 +91,8 @@ def build(companies, callers, solutions, calls, experts, now: datetime) -> dict[
     for c in callers:
         cid = company_id(c["company"])
         docs["callers"][caller_id(c["name"], cid)] = {
-            "name": c["name"], "company_id": cid, "first_seen": None, "last_seen": None, "call_count": 0,
+            "name": c["name"], "company_id": cid, "role": c.get("role"),
+            "first_seen": None, "last_seen": None, "call_count": 0,
         }
     for s in solutions:
         owner = experts_by_id.get(s["owner"]) if s["owner"] else None
