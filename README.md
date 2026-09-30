@@ -74,7 +74,7 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 - **Waar:** Firestore, Vertex AI en Cloud Run draaien in `europe-west1`.
 - **Toegang:** het dashboard leest alleen na Google-login én met een toegangsclaim die per teamlid wordt toegekend (Firestore security rules); de lijst van wie toegang heeft staat niet in de repo. Schrijven kan uitsluitend de backend. De webhook weigert verzoeken zonder geldige HMAC-signature.
 - **Open punten voor productie:**
-  - ElevenLabs verwerkt audio standaard buiten de EU. Productie vereist EU-dataresidency of een gelijkwaardige garantie, een verwerkersovereenkomst en uitgeschakelde audio-opslag bij ElevenLabs.
+  - De PoC draait op de standaard (VS) omgeving van ElevenLabs. Voor productie is een Enterprise-account met EU-residency plus Zero Retention Mode nodig, en dan nog moet per integratie worden nagegaan of er verwerking buiten de EU plaatsvindt: residency dekt de opslag, en de ElevenLabs-docs noemen post-call webhooks als uitzondering die tot verwerking buiten de regio kan leiden (zie `docs/elevenlabs-payload-check.md` §5). Daarnaast is een verwerkersovereenkomst nodig. De audio-webhook staat uit.
   - Bewaartermijn per veld (bijvoorbeeld transcript 90 dagen, geëxtraheerde velden zolang het klantdossier loopt) en een verwijderprocedure op verzoek.
   - Rechtsgrond: uitvoering van de dienstverleningsovereenkomst met de werkgever; de beller wordt aan het begin van het gesprek geïnformeerd.
 
