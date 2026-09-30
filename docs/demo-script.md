@@ -14,7 +14,7 @@ Alle personen zijn fictief, ook Lindsey. United Consulting is het enige bestaand
 
 **Wat de jury moet zien:** de beller wordt herkend, de historie en de openstaande cases staan er al, en de topoplossing toont *waarom* ze betrouwbaar is.
 
-Beller (Lindsey):
+Beller (A, als Lindsey):
 > Goeiemiddag, met Lindsey Tafels van United Consulting, ik ben verantwoordelijk voor Comp & Ben.
 > Ik bel over het vakantiegeld van een consultant die vorige maand uit dienst is gegaan. Hij krijgt veel minder vertrekvakantiegeld dan hij verwachtte, en hij denkt dat het vakantiegeld van vorig jaar er niet in zit.
 > Het is vrij dringend, hij heeft al twee keer gebeld.
