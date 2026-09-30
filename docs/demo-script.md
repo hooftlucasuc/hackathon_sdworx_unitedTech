@@ -1,23 +1,35 @@
 # Demo-script CallSight
 
-Drie gesprekken voor de video (< 3 min in totaal). In scenario a belt Lindsey Tafels (Comp & Ben, United Consulting); A speelt alle bellers, iemand anders bedient het dashboard.
+Drie gesprekken voor de video (< 3 min in totaal). In scenario a belt Lindsey Tafels (Comp & Ben, United Consulting) met een gegenereerde stem; A speelt de bellers in b en c, iemand anders bedient het dashboard.
 Alle personen zijn fictief, ook Lindsey. United Consulting is het enige bestaande bedrijf; de cases ervan zijn verzonnen. Alles staat in `data/seed/`.
 
 ## Voorbereiding (voor elke take)
 
 1. `cd callsight && python scripts/seed.py --reset` (zet historie en tellers terug naar de beginstand).
 2. Dashboard open op `/live`, browser op 100% zoom, geen andere tabbladen zichtbaar.
-3. ElevenLabs-testgesprek klaar in een tweede venster. Spreek rustig en noem naam en bedrijf **exact** zoals hieronder: de herkenning van de beller hangt ervan af.
+3. ElevenLabs-testgesprek klaar in een tweede venster. Lindsey (scenario a) is een gegenereerde stem, b en c spreekt A zelf in. Naam en bedrijf moeten **exact** zo in het transcript komen als hieronder: de herkenning van de beller hangt ervan af. Controleer dat na de eerste proefcall in het transcript op het ElevenLabs-dashboard.
 4. Plan B: lukt een gesprek niet, gebruik de knop "Simuleer gesprek" (payloads in `samples/`) en zeg dat eerlijk in de voice-over.
 
 ## Scenario a: terugkerende beller (±90 s)
 
 **Wat de jury moet zien:** de beller wordt herkend, de historie en de openstaande cases staan er al, en de topoplossing toont *waarom* ze betrouwbaar is.
 
-Beller (A, als Lindsey):
-> Goeiemiddag, met Lindsey Tafels van United Consulting, ik ben verantwoordelijk voor Comp & Ben.
-> Ik bel over het vakantiegeld van een consultant die vorige maand uit dienst is gegaan. Hij krijgt veel minder vertrekvakantiegeld dan hij verwachtte, en hij denkt dat het vakantiegeld van vorig jaar er niet in zit.
-> Het is vrij dringend, hij heeft al twee keer gebeld.
+Beller: Lindsey, met een gegenereerde stem. Elke beurt is een apart fragment (`python3 scripts/voiceover.py --caller`), dat de bediener afspeelt zodra de agent zwijgt. De volgorde van de agent kan afwijken: kies dan het fragment dat past.
+
+> **L1 · na de begroeting:** Goeiemiddag, met Lindsey Tafels van United Consulting. Ik ben verantwoordelijk voor Comp & Ben.
+> **L2 · als de agent vraagt waarmee hij kan helpen:** Ik bel over het vakantiegeld van een consultant die vorige maand uit dienst is gegaan. Hij krijgt veel minder vertrekvakantiegeld dan hij verwachtte, en hij denkt dat het vakantiegeld van vorig jaar er niet in zit.
+> **L3 · als de agent het probleem samenvat:** Ja, dat klopt.
+> **L4 · als de agent vraagt hoe dringend het is:** Vrij dringend. Hij heeft al twee keer gebeld.
+> **L5 · bij de afsluiting:** Perfect, dank u wel. Tot horens.
+
+Reserve, alleen als de agent iets anders vraagt:
+
+> **R1 · als de agent de naam niet goed verstond:** Lindsey Tafels. Tafels, zoals de meubels.
+> **R2 · als de agent het bedrijf niet goed verstond:** United Consulting, het consultancybedrijf.
+> **R3 · als de agent vraagt of er nog iets is:** Nee, dat was alles. Dank u.
+> **R4 · als de agent iets onverwachts vraagt:** Sorry, kan u dat nog eens herhalen?
+
+Afspelen: open `media/vo/<engine>/lindsey.html` (knoppen per fragment) op een **tweede toestel** naast de micro van de laptop waarop het gesprek loopt. Speel je af op dezelfde laptop, dan kan de echo-onderdrukking van de browser de stem wegfilteren.
 
 Verwacht op het dashboard:
 - Beller-historie: 3 afgehandelde calls van Lindsey, waarvan 2 over vakantiegeld (60 en 150 dagen geleden), en **3 openstaande cases**: mobiliteitsbudget (14 dagen), cafetariaplan (6 dagen), maaltijdcheques bij de klant (2 dagen). Zeg in de voice-over: *"De medewerker ziet meteen dat Lindsey nog drie vragen open heeft staan, en kan die in hetzelfde gesprek meenemen."*
