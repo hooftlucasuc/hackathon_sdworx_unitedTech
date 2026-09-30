@@ -116,7 +116,7 @@ DEMO_MODE=true          FRONTEND_ORIGIN=http://localhost:5173
 - **Backend (B) staat:** `backend/` bevat de volledige FastAPI-app, 39 groene tests, een Dockerfile en `infra/cloudbuild.backend.yaml` voor automatische deploy naar Cloud Run bij elke push naar `main`. Opzet en koppeling met GitHub: `docs/backend.md`.
 - **GCP-setup:** `infra/gcp_setup.sh` is de CallSight-versie. Het maakt Firestore, Artifact Registry, beide service accounts, het webhook-secret en alle indexen. D hoeft dit niet opnieuw te schrijven.
 - **Seed-data van D** laadt met `python scripts/seed.py --reset --yes`, via `load_solutions` en `load_calls` van de backend. `--check` valideert zonder GCP, `--probe` scoort de drie demo-scenario's. Details: `TEAMPLAN.md` §6.
-- **Restanten van het eerdere TrustCard-plan** (`BUILD_SPEC.md`, `countries/`, `sources/`) staan nog in de root en zijn niet de huidige koers. Ze gaan weg bij de freeze.
+- **TrustCard-restanten** zijn verwijderd bij de feature freeze.
 
 ## Gedeelde taken
 

@@ -51,11 +51,24 @@ python scripts/seed.py --reset --yes                 # Firestore vullen; toont o
 python scripts/kbo_lookup.py <pad-naar>/KboOpenData_<nr>_<datum>_Full.zip
 
 
-# 3. Backend
-#    TODO rol B: commando's
+# 3. Backend op Cloud Run (Cloud Build bouwt de image met het lokale embeddingmodel erin)
+P=<project-id>
+gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.backend.yaml \
+  --service-account=projects/$P/serviceAccounts/callsight-deployer@$P.iam.gserviceaccount.com .
+API=$(gcloud run services describe callsight-backend --region=europe-west1 --format='value(status.url)')
+curl -s $API/health                                   # niet /healthz: Cloud Run reserveert paden op z
+python scripts/smoke_test.py --url $API               # 31 checks: gesprek -> Firestore -> score -> historie -> oplossen
+#    lokaal zonder GCP: python scripts/smoke_test.py   (in-process, memory store)
 
-# 4. Dashboard
-#    TODO rol C: commando's
+# 4. Dashboard op Cloud Run (VITE_* worden bij de build ingebakken)
+#    Firebase web-config uit stap 1 (firebase_setup.sh); die is publiek, toegang loopt via de Firestore rules
+gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.frontend.yaml \
+  --service-account=projects/$P/serviceAccounts/callsight-deployer@$P.iam.gserviceaccount.com \
+  --substitutions="^@^_API_BASE=$API@_DATA_SOURCE=firestore@_FIREBASE_API_KEY=<apiKey>@_FIREBASE_APP_ID=<appId>" .
+UI=$(gcloud run services describe callsight-dashboard --region=europe-west1 --format='value(status.url)')
+gcloud run services update callsight-backend --region=europe-west1 \
+  --update-env-vars="^@^FRONTEND_ORIGIN=$UI,http://localhost:5173"   # CORS voor de schrijfacties van het dashboard
+#    lokaal: cd frontend && cp .env.example .env.local && npm install && npm run dev   (VITE_DATA_SOURCE=mock werkt zonder backend)
 
 # 5. ElevenLabs-agent
 #    zie docs/elevenlabs-agent.md (rol A)
@@ -65,7 +78,9 @@ Demo zonder telefoon: `POST /demo/simulate-call` met een payload uit `samples/`,
 
 ## Wat niet af is
 
-- TODO: bijwerken bij de feature freeze.
+- **Live meeluisteren** (Scribe Realtime, `scripts/scribe_listen.py` en `segment_collector.py`, `docs/contract-live.md`): de luisteraar werkt, maar de backend verwerkt nog één payload per `conversation_id`. De live-ingang (updates op dezelfde call, suggesties per zin herberekenen, doorvragen) is de eerstvolgende stap. De demo gebruikt de flow na afloop van het gesprek.
+- **Doorvragen en veldherkenning met Gemini**: niet mogelijk in de lab-omgeving, waar Vertex AI Gen AI door een org-policy op `denyAll` staat. Daarom draaien de embeddings lokaal (`EMBEDDING_PROVIDER=local`); met Vertex toegelaten volstaat `EMBEDDING_PROVIDER=vertex`.
+- **Tijdelijke omgeving**: de demo draaide in een Qwiklabs-project dat verdwijnt als de lab afloopt. De live-URL's werken daarna niet meer; stap 1 tot 4 hierboven bouwen alles opnieuw op in een eigen project.
 - Telefoonnummer (Twilio/SIP): de demo gebruikt een browser-testgesprek.
 - Trust-signalen komen uit de seed-data; in productie komen eigenaar en reviewdatum uit het documentbeheer van SD Worx.
 

@@ -1,0 +1,61 @@
+# Cloud Build: build the dashboard (frontend/) and deploy it to Cloud Run (europe-west1).
+# Run from the repo root (see README, "Dashboard"):
+#   gcloud builds submit --region=europe-west1 --config=infra/cloudbuild.frontend.yaml \
+#     --service-account=projects/$P/serviceAccounts/callsight-deployer@$P.iam.gserviceaccount.com \
+#     --substitutions="^@^_API_BASE=https://callsight-backend-xxx.a.run.app@_DATA_SOURCE=firestore@_FIREBASE_API_KEY=...@_FIREBASE_APP_ID=..." .
+# The Firebase web config is public by design (it identifies the project; access is enforced by the
+# Firestore rules), so passing it as build args is fine. Never pass a server secret here.
+substitutions:
+  _REGION: europe-west1
+  _SERVICE: callsight-dashboard
+  _AR_REPO: callsight
+  _RUNTIME_SA: callsight-backend
+  _DATA_SOURCE: mock
+  _API_BASE: http://localhost:8080
+  _DEMO_MODE: "true"
+  _FIREBASE_API_KEY: ""
+  _FIREBASE_APP_ID: ""
+  _FIREBASE_ANON_AUTH: "true"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+
+steps:
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=VITE_DATA_SOURCE=${_DATA_SOURCE}
+      - --build-arg=VITE_API_BASE=${_API_BASE}
+      - --build-arg=VITE_DEMO_MODE=${_DEMO_MODE}
+      - --build-arg=VITE_FIREBASE_API_KEY=${_FIREBASE_API_KEY}
+      - --build-arg=VITE_FIREBASE_AUTH_DOMAIN=$PROJECT_ID.firebaseapp.com
+      - --build-arg=VITE_FIREBASE_PROJECT_ID=$PROJECT_ID
+      - --build-arg=VITE_FIREBASE_APP_ID=${_FIREBASE_APP_ID}
+      - --build-arg=VITE_FIREBASE_ANON_AUTH=${_FIREBASE_ANON_AUTH}
+      - -t
+      - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+      - frontend
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: [push, "${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID"]
+
+  - id: deploy
+    name: gcr.io/google.com/cloudsdktool/cloud-sdk:slim
+    entrypoint: gcloud
+    args:
+      - run
+      - deploy
+      - ${_SERVICE}
+      - --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID
+      - --region=${_REGION}
+      - --service-account=${_RUNTIME_SA}@$PROJECT_ID.iam.gserviceaccount.com
+      - --no-invoker-iam-check
+      - --port=8080
+      - --min-instances=0
+      - --max-instances=2
+      - --memory=256Mi
+
+images:
+  - ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_AR_REPO}/${_SERVICE}:$BUILD_ID

@@ -28,7 +28,6 @@ Secrets: via omgevingsvariabelen lokaal, Secret Manager op Cloud Run, nooit in d
 - `infra/` — `gcp_setup.sh` (GCP, rol B), `firebase_setup.sh` en `firestore.rules` (dashboard-toegang, rol D), `cloudbuild.backend.yaml` (GitHub-trigger → Cloud Run), Firestore-indexen.
 - `data/seed/` + `scripts/` — fictieve dataset en seed/replay-scripts (rollen A en D).
 - `docs/` — ElevenLabs-agentconfig, demo-script, integratielog, Aikido-screenshots.
-- `countries/`, `BUILD_SPEC.md` — vorig plan; verwijderen bij de feature freeze.
 
 ## Werkafspraken
 - Het contract in `TEAMPLAN.md` §1 wijzigt alleen na melding aan alle vier.
