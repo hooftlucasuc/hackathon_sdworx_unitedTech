@@ -36,16 +36,21 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 
 ## Scène 3 · Lindsey belt (0:25–1:30)
 
-**Beeld:** links het ElevenLabs-gesprek (golfvorm of browservenster), rechts het dashboard op `/live`. Ondertitels van het gesprek onderaan.
+> **Aangepast aan de luisteropzet.** De AI praat niet mee; hij luistert mee met een gesprek
+> tussen Lindsey en een SD Worx-medewerker en vult het scherm terwijl zij nog praat. Zie
+> `docs/luisteraar.md`. Dat maakt deze scène sterker: er is geen wachttijd na het ophangen,
+> want het antwoord staat er al tijdens de vraag.
+
+**Beeld:** links het gesprek (twee mensen, of twee browservensters met `scripts/listen.html` naast elkaar — één per spreker), rechts het dashboard op `/live`. Ondertitels van het gesprek onderaan.
 
 **Gesprek (ingekort in de montage tot ±30 s):**
-- Agent, eerste zin (**laten staan**, is de AI Act-transparantie): *"Goeiedag, u spreekt met de automatische assistent van SD Worx. Ik neem uw vraag op zodat een collega u kan terugbellen. Waarmee kan ik u helpen?"* (uit `docs/elevenlabs-agent.md` §2)
-- Lindsey (gegenereerde stem, beurten L1 tot L4 in `demo-script.md`): naam, bedrijf en de vraag over vertrekvakantiegeld in één beurt, daarna "ja, dat klopt" en "liefst vandaag nog".
-- Agent vat samen en sluit af.
+- Medewerker, eerste zin (**laten staan**, dit is de transparantie): *"SD Worx, u spreekt met [naam]. Ik laat onze AI-assistent meeluisteren zodat ik u sneller kan helpen — is dat goed voor u?"* Lindsey: *"Ja hoor."*
+- Lindsey (beurten L1 tot L4 in `demo-script.md`): naam, bedrijf en de vraag over vertrekvakantiegeld, daarna "liefst vandaag nog".
+- De medewerker geeft het antwoord van het scherm.
 
-**Beeld na ophangen:** het dashboard springt naar de nieuwe call. Wacht niet in stilte: knip naar het moment dat de call verschijnt, en toon de gemeten tijd in een klein label ("verschijnt na X s").
+**Beeld tijdens het gesprek:** het veldenpaneel vult zich mee. Zet er drie kleine labels op, op het moment dat het gebeurt: bij haar eerste zin verschijnen **beller** en **bedrijf**, bij de uitleg springt **categorie** op `vakantiegeld`, bij "vandaag nog" springt **urgentie** op `hoog`. Dat is de kern van de demo — laat het zien, vertel het niet.
 
-**VO (terwijl het dashboard zich vult):**
+**VO (terwijl het scherm zich vult, nog tijdens het gesprek):**
 > Lindsey Tafels van United Consulting, Comp & Ben. Het systeem herkent haar: dit is haar derde vraag over vakantiegeld, en ze heeft nog drie vragen openstaan. Die kan de medewerker in hetzelfde gesprek meenemen.
 
 **Beeld:** inzoomen op de top-oplossing, uitleg openklappen (drie balkjes, eigenaar, reviewdatum).
@@ -112,7 +117,8 @@ Leeswerk voor de VO: ongeveer 280 woorden. Dat past in 2 minuten spreektijd; de 
 
 ## Nog in te vullen
 
-- [ ] Gemeten tijd tussen ophangen en verschijnen op het dashboard (scène 3)
+- [ ] Gemeten tijd tussen de zin van Lindsey en het bijwerken van het veld (scène 3).
+      Niet meer "na ophangen": het scherm vult zich tijdens het gesprek.
 - [ ] Werkelijke topscore van scenario a bij de opname (gekalibreerd op 83, zie `demo-script.md`)
 - [ ] Aantal Aikido-bevindingen voor en na (scène 6)
 - [ ] Wie spreekt de VO in, wie monteert
