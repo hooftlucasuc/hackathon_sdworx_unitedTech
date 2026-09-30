@@ -1,12 +1,10 @@
-"""Settings from environment. `.env` is read from the repo root or from backend/."""
+"""Settings from environment. Locally from `.env` (repo root or backend/); on Cloud Run from env + Secret Manager."""
 
 from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Optional
 
-from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BACKEND_DIR = Path(__file__).resolve().parent.parent
@@ -20,37 +18,39 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    # Google Cloud. Empty project = take it from the runtime credentials (Cloud Run metadata server).
     gcp_project: str = ""
     gcp_region: str = "europe-west1"
-    google_application_credentials: Optional[str] = None
-    gcs_bucket: str = ""
+    firestore_database: str = "(default)"
     embedding_model: str = "gemini-embedding-001"
     embedding_dim: int = 768
 
-    anthropic_api_key: str = ""
-    anthropic_model: str = "claude-sonnet-5-5"
+    # ElevenLabs post-call webhook. Empty secret = every webhook is rejected (fail closed).
+    elevenlabs_webhook_secret: str = ""
+    webhook_tolerance_secs: int = 1800
+    webhook_max_bytes: int = 5 * 1024 * 1024
 
-    jwt_secret: str = Field(default="", description="HS256 secret; required outside tests")
-    jwt_expires_min: int = 480
+    # best_score below this (or no suggestion at all) sets escalate=true. D calibrates it on the seed data.
+    escalation_threshold: int = 60
+
+    # /demo/simulate-call is only mounted when true.
+    demo_mode: bool = False
+
+    # Comma-separated list of dashboard origins allowed by CORS. No wildcard.
     frontend_origin: str = "http://localhost:5173"
 
-    seed_consultant_password: str = ""
-    seed_expert_password: str = ""
+    # Optional. When set, every non-webhook route requires header X-API-Key with this value.
+    api_key: str = ""
 
-    # firestore (default) or memory (tests / frontend dev without GCP). Not a product feature.
+    # firestore (default) | memory (local dev and tests, no GCP needed)
     store_backend: str = "firestore"
+    memory_seed_file: Path = BACKEND_DIR / "samples" / "solutions.json"
 
-    countries_dir: Path = REPO_ROOT / "countries"
-    sources_dir: Path = REPO_ROOT / "sources"
-
-    max_upload_bytes: int = 10 * 1024 * 1024
-    retrieval_k: int = 8
+    log_level: str = "INFO"
 
     @property
-    def bucket_name(self) -> str:
-        if self.gcs_bucket and "${" not in self.gcs_bucket:
-            return self.gcs_bucket
-        return f"{self.gcp_project}-trustcard-raw"
+    def cors_origins(self) -> list[str]:
+        return [o.strip() for o in self.frontend_origin.split(",") if o.strip() and o.strip() != "*"]
 
 
 @lru_cache

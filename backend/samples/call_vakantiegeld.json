@@ -1,0 +1,30 @@
+{
+  "type": "post_call_transcription",
+  "event_timestamp": 1790760000,
+  "data": {
+    "agent_id": "agent_demo",
+    "conversation_id": "conv_demo_vakantiegeld_001",
+    "status": "done",
+    "transcript": [
+      {"role": "agent", "message": "Goedemiddag, u spreekt met de digitale assistent van SD Worx. Met wie spreek ik?", "time_in_call_secs": 0},
+      {"role": "user", "message": "Dag, met Sofie Janssens van Bakkerij Verhulst.", "time_in_call_secs": 4},
+      {"role": "agent", "message": "Dag mevrouw Janssens. Waarmee kan ik u helpen?", "time_in_call_secs": 7},
+      {"role": "user", "message": "Een bediende is in maart uit dienst gegaan en haar vakantiegeld op de eindafrekening klopt niet. Het lijkt veel te laag.", "time_in_call_secs": 10},
+      {"role": "agent", "message": "Ik vat samen: het uitdiensttredingsvakantiegeld van een bediende die in maart vertrok lijkt te laag. Klopt dat? Hoe dringend is dit?", "time_in_call_secs": 20},
+      {"role": "user", "message": "Ja, dat klopt. Het is dringend, ze heeft al twee keer gebeld.", "time_in_call_secs": 27},
+      {"role": "agent", "message": "Dank u. Een collega belt u vandaag nog terug.", "time_in_call_secs": 31}
+    ],
+    "metadata": {"start_time_unix_secs": 1790760000, "call_duration_secs": 35},
+    "analysis": {
+      "call_successful": "success",
+      "transcript_summary": "Sofie Janssens van Bakkerij Verhulst meldt dat het uitdiensttredingsvakantiegeld van een bediende die in maart vertrok te laag lijkt. Dringend.",
+      "data_collection_results": {
+        "caller_name": {"data_collection_id": "caller_name", "value": "Sofie Janssens"},
+        "company_name": {"data_collection_id": "company_name", "value": "Bakkerij Verhulst BV"},
+        "problem": {"data_collection_id": "problem", "value": "Het vakantiegeld van een bediende die in maart uit dienst ging klopt niet op de eindafrekening, het lijkt te laag."},
+        "category": {"data_collection_id": "category", "value": "vakantiegeld"},
+        "urgency": {"data_collection_id": "urgency", "value": "hoog"}
+      }
+    }
+  }
+}

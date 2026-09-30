@@ -1,0 +1,29 @@
+{
+  "type": "post_call_transcription",
+  "event_timestamp": 1790767200,
+  "data": {
+    "agent_id": "agent_demo",
+    "conversation_id": "conv_demo_nieuw_003",
+    "status": "done",
+    "transcript": [
+      {"role": "agent", "message": "Goedemiddag, u spreekt met de digitale assistent van SD Worx. Met wie spreek ik?", "time_in_call_secs": 0},
+      {"role": "user", "message": "Leen Martens, Drukkerij De Vos.", "time_in_call_secs": 3},
+      {"role": "agent", "message": "Dag mevrouw Martens. Waarmee kan ik helpen?", "time_in_call_secs": 6},
+      {"role": "user", "message": "We willen een gepensioneerde oud-medewerker terug inzetten als flexi-jobber en we weten niet welke grenzen daarvoor gelden.", "time_in_call_secs": 9},
+      {"role": "agent", "message": "Ik noteer: vraag over het inzetten van een gepensioneerde als flexi-jobber. Hoe dringend is dit?", "time_in_call_secs": 18},
+      {"role": "user", "message": "Gemiddeld, hij zou volgende maand beginnen.", "time_in_call_secs": 23}
+    ],
+    "metadata": {"start_time_unix_secs": 1790767200, "call_duration_secs": 30},
+    "analysis": {
+      "call_successful": "success",
+      "transcript_summary": "Leen Martens van Drukkerij De Vos vraagt welke regels gelden om een gepensioneerde oud-medewerker als flexi-jobber in te zetten.",
+      "data_collection_results": {
+        "caller_name": {"data_collection_id": "caller_name", "value": "Leen Martens"},
+        "company_name": {"data_collection_id": "company_name", "value": "Drukkerij De Vos NV"},
+        "problem": {"data_collection_id": "problem", "value": "Welke regels en grenzen gelden om een gepensioneerde oud-medewerker als flexi-jobber in te zetten?"},
+        "category": {"data_collection_id": "category", "value": "overig"},
+        "urgency": {"data_collection_id": "urgency", "value": "midden"}
+      }
+    }
+  }
+}

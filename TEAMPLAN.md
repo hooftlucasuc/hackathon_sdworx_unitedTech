@@ -240,4 +240,34 @@ Regels: geen echte persoonsgegevens, ook niet van teamleden, in seed-data of scr
 
 ## 5. Wat van de eerdere TrustCard-opzet blijft
 
-Deze repo bevat al bestanden van het vorige plan (`BUILD_SPEC.md`, `countries/`, `backend/app/core/`, `backend/app/store/`, `backend/app/ingest/`). Herbruikbaar zonder wijziging voor B: `store/embeddings.py` (Vertex-embedder + offline hash-embedder voor tests), `store/firestore_repo.py` als voorbeeld van FieldFilter/Vector/batch-writes, `core/trust.py` als voorbeeld van deterministische, uitlegbare scores met reason-strings. De rest (countries, ingest, trust-schemas) is niet nodig; verwijderen bij de freeze, niet eerder, zodat niemand blokkeert op een verdwenen import.
+De TrustCard-modules in `backend/` zijn vervangen door de CallSight-backend (rol B, klaar, zie `docs/backend.md`). In de root staan nog `BUILD_SPEC.md`, `countries/` en `sources/` van het vorige plan; die gaan weg bij de freeze. `infra/gcp_setup.sh` is al de CallSight-versie, dus punt 1 van prompt D is gedaan.
+
+---
+
+## 6. Gedeelde taken die tussen de rollen vallen
+
+Deze punten hoorden bij geen enkele rol. Eigenaar en status per punt; werk de status bij wanneer je er één afrondt.
+
+| Wat | Waarom het nodig is | Eigenaar | Status |
+|---|---|---|---|
+| **Firebase aan het GCP-project koppelen**: web-app registreren, `VITE_FIREBASE_*`-config | C kan pas realtime lezen als die er is. | D, in de GCP-setup | Open. Firebase-console → *Add project* → bestaand GCP-project kiezen → web-app registreren → config naar C. |
+| **Firestore security rules en Firebase Auth** | Zonder rules werkt `onSnapshot` niet, of staan alle calls publiek. Aikido en de jury zien dat. | D schrijft de rules, C bouwt de login (Google of anoniem) | Open. De backend schrijft met een service account en omzeilt de rules, dus de rules mogen voor de browser alleen lezen: `allow read: if request.auth != null; allow write: if false;` op `calls`, `callers`, `companies`, `solutions`. Anoniem inloggen laat iedereen met de link binnen; Google-login met een e-maillijst is strenger. |
+| **Composite indexes voor C's queries** | `calls where caller_id == X orderBy started_at desc` en hetzelfde met `company_id` falen zonder index. | D | **Klaar.** `infra/gcp_setup.sh` maakt ze, samen met de vector-indexen. |
+| **Hosting van het dashboard** | CORS staat op localhost. Waar draait C's build in de video? | C bouwt, D zet Firebase Hosting op en past `FRONTEND_ORIGIN` aan | Open. De origin gaat in de trigger-substitutie `_FRONTEND_ORIGIN`, komma-gescheiden met `http://localhost:5173`, daarna de trigger opnieuw draaien. |
+| **Secrets in Secret Manager** | B's deploy leest ze, maar niemand maakt ze aan. | D | **Aangemaakt.** `gcp_setup.sh` maakt `elevenlabs-webhook-secret` met een placeholder. Nog te doen: A's echte secret toevoegen, commando in `docs/backend.md` stap 5. |
+| **Wie mag in het GCP-project**: IAM voor alle vier, billing, budget-alert | Het eerste halfuur mag niemand geblokkeerd zijn. | D, bij de start | Open. Minimaal: B en D `Editor`, A en C `Viewer` plus `Firebase Viewer`, en een budget-alert op het hackathonkrediet. |
+| **Een gedeelde `slug()`** | De seed van D en de upsert van B moeten dezelfde ID's maken, anders vindt scenario 1 de historie niet. | B schrijft ze, `seed.py` importeert ze | **Klaar.** `company_id_for` en `caller_id_for` in `backend/app/pipeline.py`. Eenvoudigst voor D: historische calls laden met `python -m app.cli load-calls`, dat door exact dezelfde pipeline gaat. |
+| **Een gedeelde embedder** | De seed en de queries moeten met hetzelfde model, dezelfde task en dezelfde dimensie embedden. | Dezelfde module voor B en D | **Klaar.** `backend/app/embeddings.py`; oplossingen laden met `python -m app.cli load-solutions`. |
+| **Een drempel voor "escaleer"** | C toont de melding, maar niemand bepaalt wanneer. | D kalibreert op de seed-data, B zet de vlag in de response | **B-deel klaar.** Elke call heeft `escalate`: waar als er geen suggestie is of de beste score onder `ESCALATION_THRESHOLD` ligt, standaard 60. D stelt de waarde bij via de trigger-substitutie `_ESCALATION_THRESHOLD`. |
+| **Nieuwe oplossing uit een call** | Het juryverhaal ("elke call maakt de kennisbank beter") heeft geen route die het waarmaakt. | Beslissen vóór de freeze: B of niet | Open beslissing. Nu stijgen alleen de tellers van bestaande oplossingen. Voorstel: `resolve` accepteert ook een nieuwe oplossingstekst en maakt daarmee een `solutions`-document met `source_call_id`. Ongeveer een halfuur werk voor B. |
+| **Opruimen van de TrustCard-bestanden bij de freeze** | Nu staat het er alleen als intentie. | D | Open. Verwijderen: `BUILD_SPEC.md`, `countries/`, `sources/` en de `sources`-regels in `.gitignore`. `backend/` is al opgeruimd. |
+
+### Historische calls voor de seed (voor D)
+
+`python -m app.cli load-calls data/seed/calls.json` verwacht een JSON-lijst van ElevenLabs post-call payloads, hetzelfde formaat als `backend/samples/call_*.json`, met een unieke `conversation_id` en een `start_time_unix_secs` in het verleden. Een optioneel veld per payload markeert de call als opgelost:
+
+```json
+"resolution": {"solution_id": "vakantiegeld-uitdienst-bediende", "worked": true, "resolved_at": "2026-06-01T10:00:00Z"}
+```
+
+Een resolution verhoogt `times_used` en `times_successful` van die oplossing. Tel die calls dus niet ook al mee in de tellers van `solutions.json`. Laad eerst de oplossingen, dan de calls.

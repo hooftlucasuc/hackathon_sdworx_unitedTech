@@ -1,44 +1,38 @@
-# Firestore indexes
+# Firestore indexes (CallSight)
 
-All commands are run by `infra/gcp_setup.sh`. Listed here so they can be re-run by hand.
+`infra/gcp_setup.sh` creates all of these. Listed here to re-run by hand. Dimension must equal
+`EMBEDDING_DIM` (768 for `gemini-embedding-001` with `output_dimensionality=768`).
 
-## Vector index on `chunks` (required for retrieval)
-
-Pre-filters `country` and `status` (equality), then nearest-neighbour on `embedding`.
-Dimension must equal `EMBEDDING_DIM` in `.env` (768 for `gemini-embedding-001` with
-`output_dimensionality=768`; 384 for the local sentence-transformers fallback).
+## Vector index on `solutions` (required: the backend's solution search)
 
 ```bash
-gcloud firestore indexes composite create \
-  --project="$GCP_PROJECT" \
-  --collection-group=chunks \
-  --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=country \
-  --field-config=order=ASCENDING,field-path=status \
-  --field-config=vector-config='{"dimension":"768","flat":"{}"}',field-path=embedding
+gcloud firestore indexes composite create --collection-group=solutions --query-scope=COLLECTION \
+  --field-config=field-path=problem_embedding,vector-config='{"dimension":"768","flat":"{}"}'
 ```
 
-## Composite indexes on `questions`
+Without it, calls are still stored but `suggestions_status` is `search_error`. After the index is
+ready, recompute an affected call with `python -m app.cli rescore <call_id>`.
 
-`GET /questions` (own questions, newest first):
+## Vector index on `calls` (reserved for "similar past calls")
 
 ```bash
-gcloud firestore indexes composite create --project="$GCP_PROJECT" \
-  --collection-group=questions --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=asked_by \
-  --field-config=order=DESCENDING,field-path=created_at
+gcloud firestore indexes composite create --collection-group=calls --query-scope=COLLECTION \
+  --field-config=field-path=problem_embedding,vector-config='{"dimension":"768","flat":"{}"}'
 ```
 
-`GET /expert/inbox` (assigned to me and escalated, newest first):
+## Composite indexes on `calls` (for the dashboard's realtime queries)
+
+The backend API sorts history in Python and does not need these. The dashboard's
+`where('caller_id','==',x).orderBy('started_at','desc')` with `onSnapshot` does.
 
 ```bash
-gcloud firestore indexes composite create --project="$GCP_PROJECT" \
-  --collection-group=questions --query-scope=COLLECTION \
-  --field-config=order=ASCENDING,field-path=assigned_expert_id \
-  --field-config=order=ASCENDING,field-path=status \
-  --field-config=order=DESCENDING,field-path=created_at
+for f in caller_id company_id; do
+  gcloud firestore indexes composite create --collection-group=calls --query-scope=COLLECTION \
+    --field-config=order=ASCENDING,field-path=$f \
+    --field-config=order=DESCENDING,field-path=started_at
+done
 ```
 
-`GET /sources` uses `country in [X, ALL]` on `knowledge_items`, which needs no composite index.
+`orderBy('started_at','desc').limit(1)` on `calls` (the live screen) uses the automatic single-field index.
 
-Check status: `gcloud firestore indexes composite list --project="$GCP_PROJECT"`.
+Check status: `gcloud firestore indexes composite list`.

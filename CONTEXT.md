@@ -38,18 +38,24 @@ Iedereen werkt op dummy-data van de buurrol tot de koppeling er is. `POST /demo/
 ### Firestore-collecties (Native mode, europe-west1)
 
 ```
-callers/{caller_id}     caller_id = slug(caller_name + company_id)
+callers/{caller_id}     caller_id = "<slug naam>--<company_id>", bv. sofie-janssens--bakkerij-verhulst
                         name, company_id, first_seen, last_seen, call_count
-companies/{company_id}  company_id = slug(company_name)
+companies/{company_id}  company_id = slug(company_name) zonder rechtsvorm, bv. "Bakkerij Verhulst BV" → bakkerij-verhulst
                         name, sector, size, first_seen, last_seen, call_count, open_issues
 calls/{call_id}         call_id = conversation_id
-                        caller_id, company_id, started_at, duration_secs, problem, category, urgency,
-                        summary, transcript[], status: open | resolved, problem_embedding: Vector(768),
-                        suggestions[ {solution_id, score, reasons: {similarity, success, recency}} ] (max 5),
-                        chosen_solution_id
+                        caller_id, company_id (beide null als de agent ze niet kon ophalen),
+                        caller_name, company_name, started_at, received_at, duration_secs,
+                        problem, category, urgency, summary, transcript[], status: open | resolved,
+                        problem_embedding: Vector(768),
+                        suggestions[ {solution_id, title, score, reasons: {similarity, success, recency}} ] (max 5),
+                        best_score, escalate (true als best_score < ESCALATION_THRESHOLD of geen suggestie),
+                        suggestions_status: ok | no_problem | embedding_error | search_error,
+                        chosen_solution_id, solution_worked, resolved_at
 solutions/{solution_id} title, problem_text, solution_text, category, times_used, times_successful,
                         last_used_at, source_call_id, problem_embedding: Vector(768)
 ```
+
+Alle tijdstippen zijn Firestore-timestamps (UTC), zodat `orderBy('started_at')` werkt. De API geeft ze als ISO-strings en laat `problem_embedding` altijd weg.
 
 ### API
 
@@ -65,6 +71,15 @@ solutions/{solution_id} title, problem_text, solution_text, category, times_used
 | POST | `/demo/simulate-call` | zelfde body als de webhook, zonder signature, alleen met `DEMO_MODE=true` |
 
 Het dashboard leest daarnaast rechtstreeks uit Firestore met `onSnapshot` (alleen lezen).
+
+Details voor wie tegen de API bouwt:
+
+- `/demo/simulate-call` geeft elke aanroep een nieuwe `conversation_id` (`demo-…`) en de huidige tijd, zodat één voorbeeldbestand meerdere calls oplevert. Met `?keep_id=true` blijven id en starttijd uit de payload behouden.
+- `/calls/{id}/suggestions` geeft de opgeslagen score plus de actuele velden van de oplossing: `solution_text`, `problem_text`, `category`, `times_used`, `times_successful`, `last_used_at`.
+- `/calls/{id}/resolve` geeft 404 bij een onbekende call of oplossing en 409 als de call al opgelost is.
+- History-lijsten in `/callers/{id}` en `/companies/{id}` bevatten geen transcript en geen suggestions, nieuwste eerst.
+- Is `API_KEY` gezet op de backend, dan vraagt elke route behalve de webhook en `/healthz` de header `X-API-Key`. Standaard staat dit uit.
+- Voorbeeldpayloads en voorbeeldoplossingen staan in `backend/samples/`. De OpenAPI-docs staan op `<backend-url>/docs`.
 
 ### Score van een oplossing
 
@@ -98,7 +113,24 @@ DEMO_MODE=true          FRONTEND_ORIGIN=http://localhost:5173
 
 ## Stand van de repo
 
-De repo bevat nog bestanden van een eerder plan ("TrustCard": `BUILD_SPEC.md`, `countries/`, `backend/app/core/`, `backend/app/ingest/`, `backend/app/store/`). Die zijn **niet** de huidige koers. Herbruikbaar voor B: `backend/app/store/embeddings.py` (Vertex-embedder plus offline hash-embedder voor tests) en `backend/app/store/firestore_repo.py` als voorbeeld van FieldFilter, Vector en batch-writes. De rest laat je staan tot de freeze en verwijder je dan; niet eerder, zodat niemand blokkeert op een verdwenen import.
+- **Backend (B) staat:** `backend/` bevat de volledige FastAPI-app, 39 groene tests, een Dockerfile en `infra/cloudbuild.backend.yaml` voor automatische deploy naar Cloud Run bij elke push naar `main`. Opzet en koppeling met GitHub: `docs/backend.md`.
+- **GCP-setup:** `infra/gcp_setup.sh` is de CallSight-versie. Het maakt Firestore, Artifact Registry, beide service accounts, het webhook-secret en alle indexen. D hoeft dit niet opnieuw te schrijven.
+- **Seed-data van D** laadt via `python -m app.cli load-solutions <bestand>.json` en `python -m app.cli load-calls <bestand>.json`. Formaat en voorbeeld: `TEAMPLAN.md` §6.
+- **Restanten van het eerdere TrustCard-plan** (`BUILD_SPEC.md`, `countries/`, `sources/`) staan nog in de root en zijn niet de huidige koers. Ze gaan weg bij de freeze.
+
+## Gedeelde taken
+
+Punten die tussen de rollen vallen staan met eigenaar en status in `TEAMPLAN.md` §6. Nog open:
+
+- **D:** Firebase aan het GCP-project koppelen en de `VITE_FIREBASE_*`-config aan C geven.
+- **D en C:** Firestore security rules (browser alleen lezen, na login) en de login in het dashboard.
+- **C en D:** hosting van het dashboard, daarna de origin in `_FRONTEND_ORIGIN` van de backend-trigger.
+- **D:** IAM voor alle vier, billing en een budget-alert, in het eerste halfuur.
+- **D:** de escalatiedrempel kalibreren op de seed-data, via `_ESCALATION_THRESHOLD`.
+- **Team:** beslissen vóór de freeze of `resolve` ook een nieuwe oplossing mag aanmaken.
+- **D:** de TrustCard-bestanden verwijderen bij de freeze.
+
+Al klaar: de composite indexes, het webhook-secret in Secret Manager, de gedeelde `slug()` en embedder, en de `escalate`-vlag. D laadt seed-data met `python -m app.cli load-solutions` en `python -m app.cli load-calls`, zodat seed en live calls dezelfde ID's en embeddings krijgen.
 
 ## Demo-scenario's (D schrijft ze uit, A oefent ze)
 
