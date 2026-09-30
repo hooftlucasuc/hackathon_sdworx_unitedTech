@@ -50,15 +50,26 @@ def slugify(text: str, max_len: int = 80) -> str:
     return "-".join(_ascii_words(text))[:max_len].strip("-")
 
 
+def _legal_form_len(words: list[str], at_end: bool) -> int:
+    """Number of tokens that form a legal form at the end (or start): 'bv', or 'b', 'v' from 'B.V.'."""
+    for k in (4, 3, 2, 1):
+        if len(words) > k:
+            part = words[-k:] if at_end else words[:k]
+            if "".join(part) in LEGAL_FORMS and (k == 1 or all(len(w) <= 4 for w in part)):
+                return k
+    return 0
+
+
 def company_id_for(name: Optional[str]) -> Optional[str]:
-    """'Bakkerij Verhulst BV' and 'bakkerij verhulst' map to the same id: legal forms are dropped."""
+    """'Bakkerij Verhulst BV', 'Bakkerij Verhulst B.V.' and 'bakkerij verhulst' map to the same id:
+    legal forms are dropped, also when written with dots."""
     if not name:
         return None
     words = _ascii_words(name)
-    while len(words) > 1 and words[-1] in LEGAL_FORMS:
-        words.pop()
-    while len(words) > 1 and words[0] in LEGAL_FORMS:
-        words.pop(0)
+    while k := _legal_form_len(words, at_end=True):
+        del words[-k:]
+    while k := _legal_form_len(words, at_end=False):
+        del words[:k]
     slug = "-".join(words)[:80].strip("-")
     return slug or None
 
