@@ -123,10 +123,22 @@ Draai de drie beurten uit `samples/audio/` na elkaar met hetzelfde `--call-id` e
 springt de categorie op `vakantiegeld`, na beurt 3 gaat de urgentie naar `hoog`. Dat is
 het demo-verhaal in drie stappen, zonder dat er iemand hoeft te bellen.
 
+## Twee sprekers, twee vensters
+
+Open `http://localhost:8600/` twee keer met hetzelfde gesprek-id en een andere spreker.
+Elk venster stuurt alleen zijn eigen microfoon in, maar leest het hele gesprek bij de
+verzamelaar: de medewerker ziet dus wat de beller zegt, met "(jij)" bij zijn eigen beurten.
+
+De extractie kijkt bewust alleen naar de beurten van de **beller**. Getest met twee
+gelijktijdige sessies: de zin van de medewerker ("SD Worx, u spreekt met Jan") levert geen
+naam en geen bedrijf op, en de gegevens van de beller blijven staan zoals ze horen.
+
+Eén vondst uit die test: zonder keyterm wordt **"SD Worx" getranscribeerd als "Dvorak"**.
+Met `SD Worx` in de lijst komt het er correct uit. Dat is de moeite waard om te onthouden
+voor de video — de naam van de klant verkeerd in beeld is geen detail.
+
 ## Wat er nog niet is
 
 - De browserpagina die een echte microfoon streamt. Het protocol is bewezen met
   bestandsaudio; de stap naar `getUserMedia` is klein maar nog niet gezet.
-- Het token-endpoint voor client-side gebruik.
 - De gemini-extractor in een project dat Vertex-modellen toelaat (Qwiklabs: `denyAll`).
-- Twee sessies tegelijk, met de medewerker op de tweede.

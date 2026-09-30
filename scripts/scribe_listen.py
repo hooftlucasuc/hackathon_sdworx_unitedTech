@@ -44,6 +44,7 @@ MAX_KEYTERM_CHARS = 20  # limiet van Scribe v2 Realtime; batch mag 50
 # Zelfde lijst als de ASR-keywords van de agentconfig: zonder boost komen Dimona,
 # DmfA en C4 er verminkt uit, en dan mist de extractie de categorie.
 KEYTERMS = [
+    "SD Worx",
     "vakantiegeld",
     "vertrekvakantiegeld",
     "Dimona",

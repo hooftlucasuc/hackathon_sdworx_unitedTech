@@ -83,7 +83,7 @@
 const WS_BASE = "wss://api.elevenlabs.io/v1/speech-to-text/realtime";
 // Herhaald als aparte parameter, elk hoogstens 20 tekens. Eén komma-string is
 // één te lange keyterm en levert een kaal 1008 invalid_request op.
-const KEYTERMS = ["vakantiegeld","vertrekvakantiegeld","Dimona","DmfA","maaltijdcheques",
+const KEYTERMS = ["SD Worx","vakantiegeld","vertrekvakantiegeld","Dimona","DmfA","maaltijdcheques",
   "ecocheques","RSZ","bedrijfsvoorheffing","paritair comite","C4","opzegtermijn",
   "voordeel alle aard","gewaarborgd loon","loonrun"];
 const TARGET_RATE = 16000;
@@ -129,14 +129,25 @@ function base64(int16) {
   return btoa(s);
 }
 
-function addSegment(speaker, text) {
-  const div = document.createElement("div");
-  div.className = "seg";
-  div.innerHTML = '<span class="who"></span><span></span>';
-  div.querySelector(".who").textContent = speaker;
-  div.querySelectorAll("span")[1].textContent = text;
-  $("segments").appendChild(div);
-  div.scrollIntoView({block:"nearest"});
+// Het transcript komt van de verzamelaar, niet uit dit venster: zo ziet de
+// medewerker wat de beller zegt en omgekeerd. Elk venster stuurt alleen zijn
+// eigen microfoon in, maar leest het hele gesprek.
+let laatsteSegmenten = 0;
+function renderSegments(segments) {
+  if (segments.length === laatsteSegmenten) return;
+  laatsteSegmenten = segments.length;
+  const box = $("segments");
+  box.textContent = "";
+  const mij = $("speaker").value;
+  for (const s of segments) {
+    const div = document.createElement("div");
+    div.className = "seg";
+    div.innerHTML = '<span class="who"></span><span></span>';
+    div.querySelector(".who").textContent = s.speaker + (s.speaker === mij ? " (jij)" : "");
+    div.querySelectorAll("span")[1].textContent = s.text;
+    box.appendChild(div);
+  }
+  box.lastElementChild?.scrollIntoView({ block: "nearest" });
 }
 
 async function refreshFields() {
@@ -150,6 +161,7 @@ async function refreshFields() {
       cell.textContent = value || "—";
       cell.classList.toggle("leeg", !value);
     }
+    renderSegments(data.segments || []);
   } catch (e) { /* de verzamelaar mag even weg zijn */ }
 }
 
@@ -172,7 +184,6 @@ async function connect(callId, speaker) {
       const text = (msg.text || "").trim();
       $("partial").textContent = "";
       if (!text) return;
-      addSegment(speaker, text);
       fetch("/segment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,7 +197,6 @@ async function connect(callId, speaker) {
     socket.onopen = resolve;
     setTimeout(() => reject(new Error("verbinding kwam niet op gang")), 10000);
   });
-  poller = setInterval(refreshFields, 2000);
   return socket;
 }
 
@@ -251,12 +261,10 @@ async function start() {
   };
   source.connect(node);
   node.connect(ctx.destination);
-  poller = setInterval(refreshFields, 2000);
 }
 
 function stop(fromClose) {
   running = false;
-  if (poller) { clearInterval(poller); poller = null; }
   if (node) { node.disconnect(); node.onaudioprocess = null; node = null; }
   if (source) { source.disconnect(); source = null; }
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
@@ -279,13 +287,17 @@ $("toggle").onclick = () => {
 // zich stap voor stap vullen.
 const CLIPS = ["vakantiegeld_beurt1.pcm","vakantiegeld_beurt2.pcm","vakantiegeld_beurt3.pcm"];
 let clipIndex = 0;
+$("speaker").onchange = () => { laatsteSegmenten = -1; refreshFields(); };
 $("demo").onclick = () => {
   if (running) { stop(); return; }
   const clip = CLIPS[clipIndex % CLIPS.length];
   clipIndex++;
   playClip(clip).catch(e => { setStatus("fout: " + e.message); stop(); });
 };
+// Blijft volgen, ook als dit venster zelf niets opneemt: het scherm van de
+// medewerker is het product, niet de microfoon.
 refreshFields();
+setInterval(refreshFields, 2000);
 </script>
 </body>
 </html>

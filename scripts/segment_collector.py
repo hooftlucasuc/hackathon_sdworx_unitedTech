@@ -382,7 +382,16 @@ def make_handler(collector: Collector):
                     if not call:
                         self._send(404, {"error": "unknown call"})
                         return
-                    self._send(200, {"fields": call.fields, "transcript": call.transcript_text(None)})
+                    # Beide vensters lezen hier hetzelfde transcript: de medewerker
+                    # ziet wat de beller zegt en omgekeerd.
+                    self._send(
+                        200,
+                        {
+                            "fields": call.fields,
+                            "transcript": call.transcript_text(None),
+                            "segments": [{"speaker": s["speaker"], "text": s["text"]} for s in call.segments],
+                        },
+                    )
                 return
             self._send(404, {"error": "unknown route"})
 
